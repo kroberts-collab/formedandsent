@@ -857,30 +857,22 @@ After your feedback, always end with a single follow-up question that pushes dee
     role: "user",
     content: `Passage:\n${a.passage}\n\nQuestion: ${a.questions[qIndex]}\n\nMy answer: ${studentAnswer}`
   });
-
-  try {
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+try {
+    const resp = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_KEY,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true"
-      },
+      headers: {"Content-Type":"application/json"},
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 400,
-        system: systemPrompt,
-        messages: conversationHistory
+        action:       "getAIFeedback",
+        systemPrompt,
+        messages:     conversationHistory
       })
     });
     const data = await resp.json();
-    return data.content?.[0]?.text || "Thank you for your response. Let's think a little deeper — what evidence from the text supports your answer?";
+    return data.feedback || "Thank you for your response. Let's think a little deeper — what evidence from the text supports your answer?";
   } catch(e) {
     return "Great effort! Let's push further — what specific part of the passage supports your answer?";
   }
 }
-
 window.completeAssignment = async () => {
   mc().innerHTML = `<div class="loading-spinner" style="margin-top:80px"></div>`;
   const totalQ = curAssignment.questions.length;
