@@ -563,7 +563,7 @@ window.saveAssignment = async (existingId) => {
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
-        headers: {"Content-Type":"application/json"},
+        headers: {"Content-Type":"text/plain;charset=utf-8"},
         body: JSON.stringify({
           action: "postAssignment",
           token: gToken,
@@ -860,7 +860,7 @@ After your feedback, always end with a single follow-up question that pushes dee
 try {
     const resp = await fetch(APPS_SCRIPT_URL, {
       method: "POST",
-      headers: {"Content-Type":"application/json"},
+      headers: {"Content-Type":"text/plain;charset=utf-8"},
       body: JSON.stringify({
         action:       "getAIFeedback",
         systemPrompt,
@@ -896,7 +896,7 @@ window.completeAssignment = async () => {
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: "POST",
-        headers: {"Content-Type":"application/json"},
+        headers: {"Content-Type":"text/plain;charset=utf-8"},
         body: JSON.stringify({
           action:          "saveResponse",
           assignmentTitle: curAssignment.title,
