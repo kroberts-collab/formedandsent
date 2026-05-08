@@ -757,6 +757,7 @@ window.renderAssignment = async (assignmentId) => {
 
 function renderQuestion() {
   const a        = curAssignment;
+  followUpRound = 0;  // reset rounds counter
   const total    = a.questions.length;
   const progress = Math.round((qIndex / total) * 100);
 
@@ -808,6 +809,9 @@ function renderQuestion() {
   }
 }
 
+let followUpRound = 0;  // tracks rounds within current question
+const MAX_ROUNDS = 5;
+
 window.submitAnswer = async () => {
   const answer = $("student-answer").value.trim();
   if (!answer) { toast("Please write an answer first.", true); return; }
@@ -815,30 +819,72 @@ window.submitAnswer = async () => {
   $("submit-btn").disabled = true;
   $("student-answer").disabled = true;
 
-  // Show typing indicator
   const fbArea = $("ai-feedback-area");
-  fbArea.innerHTML = `<div class="ai-response"><div class="ai-label">Tutor</div><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  fbArea.insertAdjacentHTML("beforeend",
+    `<div class="ai-response" id="thinking"><div class="ai-label">Tutor</div>
+     <div class="typing-dots"><span></span><span></span><span></span></div></div>`);
 
   // Get AI feedback
-  const feedback = await getAIFeedback(answer);
+  const rawFeedback = await getAIFeedback(answer);
 
-  fbArea.innerHTML = `<div class="ai-response"><div class="ai-label">Tutor</div><p>${feedback}</p></div>`;
+  // Parse the [CONTINUE] / [ADVANCE] signal
+  let signal = "CONTINUE";
+  let cleanFeedback = rawFeedback;
+  if (rawFeedback.includes("[ADVANCE]")) {
+    signal = "ADVANCE";
+    cleanFeedback = rawFeedback.replace(/\[ADVANCE\]/g, "").trim();
+  } else if (rawFeedback.includes("[CONTINUE]")) {
+    cleanFeedback = rawFeedback.replace(/\[CONTINUE\]/g, "").trim();
+  }
 
-  // Save to session
-  session.push({ question: curAssignment.questions[qIndex], answer, feedback });
-  qIndex++;
+  // Replace thinking dots with actual feedback
+  $("thinking").remove();
+  fbArea.insertAdjacentHTML("beforeend",
+    `<div class="exchange-block">
+       <p class="student-prior-answer"><strong>Your answer:</strong> ${answer}</p>
+       <div class="ai-response"><div class="ai-label">Tutor</div><p>${cleanFeedback}</p></div>
+     </div>`);
 
+  // Save this exchange
+  session.push({ question: curAssignment.questions[qIndex], answer, feedback: cleanFeedback });
+  followUpRound++;
+
+  // Decide what comes next
   const total = curAssignment.questions.length;
   const ar = $("action-row");
+  const isLastQuestion = (qIndex >= total - 1);
 
-  if (qIndex < total) {
-    ar.innerHTML = `<button class="btn btn-primary" onclick="nextQuestion()">Next Question →</button>`;
+  // Force advance if we've hit the safety cap
+  const forceAdvance = followUpRound >= MAX_ROUNDS;
+
+  if (signal === "ADVANCE" || forceAdvance) {
+    // Move to next question (or complete)
+    if (isLastQuestion) {
+      ar.innerHTML = `<button class="btn btn-primary" onclick="completeAssignment()">Complete Assignment ✓</button>`;
+    } else {
+      ar.innerHTML = `<button class="btn btn-primary" onclick="nextQuestion()">Next Question →</button>`;
+    }
+    if (forceAdvance && signal !== "ADVANCE") {
+      ar.insertAdjacentHTML("afterbegin",
+        `<p style="color:var(--ink3);font-size:.85rem;margin-bottom:8px;width:100%">
+          You've explored this question well — let's move on.</p>`);
+    }
   } else {
-    ar.innerHTML = `<button class="btn btn-primary" onclick="completeAssignment()">Complete Assignment ✓</button>`;
+    // Stay on this question — let student respond again
+    $("student-answer").value = "";
+    $("student-answer").disabled = false;
+    $("student-answer").placeholder = "Develop your answer further based on the tutor's feedback…";
+    $("student-answer").focus();
+    $("submit-btn").disabled = false;
+    $("submit-btn").textContent = `Submit (round ${followUpRound + 1} of ${MAX_ROUNDS})`;
   }
 };
 
-window.nextQuestion = () => { renderQuestion(); };
+window.nextQuestion = () => {
+  qIndex++;
+  followUpRound = 0;  // reset for new question
+  renderQuestion();
+};
 
 async function getAIFeedback(studentAnswer) {
   const a = curAssignment;
