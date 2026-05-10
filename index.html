@@ -455,6 +455,7 @@ async function renderTeacherHome() {
         <div class="card-actions">
           <button class="btn btn-ghost" onclick="renderResponses('${d.id}','${a.title.replace(/'/g,"\\'")}')">📊 Responses</button>
           <button class="btn btn-ghost" onclick="renderEditAssignment('${d.id}')">✏️ Edit</button>
+          <button class="btn btn-ghost" onclick="duplicateAssignment('${d.id}')">🔁 Duplicate</button>
           <button class="btn btn-danger btn-ghost" onclick="deleteAssignment('${d.id}')">🗑</button>
         </div>
       </div>`;
@@ -605,6 +606,27 @@ window.deleteAssignment = async id => {
 window.renderEditAssignment = async id => {
   const snap = await getDoc(doc(db,"assignments",id));
   renderCreateAssignment(id, snap.data());
+};
+window.duplicateAssignment = async id => {
+  const snap = await getDoc(doc(db,"assignments",id));
+  if (!snap.exists()) { toast("Assignment not found.", true); return; }
+  const data = snap.data();
+
+  // Build a fresh draft — copy content but clear class selections and rename
+  const draft = {
+    title:        (data.title || "") + " (Copy)",
+    subject:      data.subject || "",
+    passage:      data.passage || "",
+    questions:    data.questions || [],
+    instructions: data.instructions || "",
+    classIds:     [],   // start unselected so teacher chooses fresh
+    classNames:   []
+  };
+
+  // Open the create form with the draft pre-filled, but no existing ID
+  // (passing no id means "Publish" creates a new doc rather than overwriting)
+  renderCreateAssignment("", draft);
+  toast("Duplicated! Edit and choose classes, then publish.");
 };
 
 /* ═══════════════════════════════════════════════
