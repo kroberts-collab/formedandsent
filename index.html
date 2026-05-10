@@ -185,6 +185,21 @@
   .history-q     { font-size: .85rem; color: var(--ink2); margin-bottom: 4px; font-weight: 500; }
   .history-a     { font-size: .9rem; margin-bottom: 8px; }
   .history-ai    { font-size: .85rem; color: var(--accent); font-style: italic; border-left: 2px solid var(--accent2); padding-left: 10px; }
+  .exchange-block { margin-bottom: 16px; }
+.student-prior-answer {
+  background: var(--bg); padding: 10px 14px; border-radius: 8px;
+  font-size: .9rem; margin-bottom: 8px; color: var(--ink2);
+  border-left: 3px solid var(--ink3);
+}
+.followup-input-block {
+  background: var(--surface); border: 1.5px solid var(--accent2); border-radius: var(--radius);
+  padding: 18px 20px; margin-top: 16px; margin-bottom: 16px;
+  animation: fadeIn .3s ease;
+}
+.followup-prompt {
+  font-size: .82rem; font-weight: 600; color: var(--accent);
+  margin-bottom: 8px; text-transform: uppercase; letter-spacing: .04em;
+}
 
   /* ── COMPLETION ───────────────────────────── */
   .completion-card { text-align: center; max-width: 500px; margin: 60px auto; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 48px 40px; box-shadow: var(--shadow-lg); }
@@ -869,14 +884,99 @@ window.submitAnswer = async () => {
         `<p style="color:var(--ink3);font-size:.85rem;margin-bottom:8px;width:100%">
           You've explored this question well — let's move on.</p>`);
     }
+} else {
+    // Stay on this question — but move the answer box DOWN under the AI's response
+    // Hide the original input area
+    $("student-answer").style.display = "none";
+    $("submit-btn").style.display = "none";
+
+    // Add a fresh answer box right under the latest AI response
+    fbArea.insertAdjacentHTML("beforeend", `
+      <div class="followup-input-block">
+        <p class="followup-prompt">Develop your answer further based on the tutor's feedback:</p>
+        <textarea id="followup-answer-${followUpRound}" class="answer-area" placeholder="Type your next response here…" autofocus></textarea>
+        <button class="btn btn-primary mt-sm" onclick="submitFollowUp(${followUpRound})">
+          Submit (round ${followUpRound + 1} of ${MAX_ROUNDS})
+        </button>
+      </div>`);
+
+    // Auto-focus the new box and scroll to it
+    setTimeout(() => {
+      const newBox = $(`followup-answer-${followUpRound}`);
+      if (newBox) { newBox.focus(); newBox.scrollIntoView({behavior:"smooth", block:"center"}); }
+    }, 100);
+  }
+};
+window.submitFollowUp = async (round) => {
+  const inputBox = $(`followup-answer-${round}`);
+  const answer   = inputBox.value.trim();
+  if (!answer) { toast("Please write an answer first.", true); return; }
+
+  // Disable the current follow-up box
+  inputBox.disabled = true;
+  inputBox.parentElement.querySelector("button").disabled = true;
+  inputBox.parentElement.querySelector("button").textContent = "Submitting…";
+
+  const fbArea = $("ai-feedback-area");
+  fbArea.insertAdjacentHTML("beforeend",
+    `<div class="ai-response" id="thinking-${round}"><div class="ai-label">Tutor</div>
+     <div class="typing-dots"><span></span><span></span><span></span></div></div>`);
+
+  // Get AI feedback (uses the same conversation history)
+  const rawFeedback = await getAIFeedback(answer);
+
+  // Parse signal
+  let signal = "CONTINUE";
+  let cleanFeedback = rawFeedback;
+  if (rawFeedback.includes("[ADVANCE]")) {
+    signal = "ADVANCE";
+    cleanFeedback = rawFeedback.replace(/\[ADVANCE\]/g, "").trim();
+  } else if (rawFeedback.includes("[CONTINUE]")) {
+    cleanFeedback = rawFeedback.replace(/\[CONTINUE\]/g, "").trim();
+  }
+
+  // Replace thinking dots with feedback
+  $(`thinking-${round}`).remove();
+  fbArea.insertAdjacentHTML("beforeend",
+    `<div class="exchange-block">
+       <p class="student-prior-answer"><strong>Your answer:</strong> ${answer}</p>
+       <div class="ai-response"><div class="ai-label">Tutor</div><p>${cleanFeedback}</p></div>
+     </div>`);
+
+  session.push({ question: curAssignment.questions[qIndex], answer, feedback: cleanFeedback });
+  followUpRound++;
+
+  const total = curAssignment.questions.length;
+  const isLastQuestion = (qIndex >= total - 1);
+  const forceAdvance   = followUpRound >= MAX_ROUNDS;
+
+  if (signal === "ADVANCE" || forceAdvance) {
+    const ar = $("action-row");
+    if (isLastQuestion) {
+      ar.innerHTML = `<button class="btn btn-primary" onclick="completeAssignment()">Complete Assignment ✓</button>`;
+    } else {
+      ar.innerHTML = `<button class="btn btn-primary" onclick="nextQuestion()">Next Question →</button>`;
+    }
+    if (forceAdvance && signal !== "ADVANCE") {
+      ar.insertAdjacentHTML("afterbegin",
+        `<p style="color:var(--ink3);font-size:.85rem;margin-bottom:8px;width:100%">
+          You've explored this question well — let's move on.</p>`);
+    }
+    ar.scrollIntoView({behavior:"smooth", block:"center"});
   } else {
-    // Stay on this question — let student respond again
-    $("student-answer").value = "";
-    $("student-answer").disabled = false;
-    $("student-answer").placeholder = "Develop your answer further based on the tutor's feedback…";
-    $("student-answer").focus();
-    $("submit-btn").disabled = false;
-    $("submit-btn").textContent = `Submit (round ${followUpRound + 1} of ${MAX_ROUNDS})`;
+    // Another follow-up round — add another input box below
+    fbArea.insertAdjacentHTML("beforeend", `
+      <div class="followup-input-block">
+        <p class="followup-prompt">Develop your answer further based on the tutor's feedback:</p>
+        <textarea id="followup-answer-${followUpRound}" class="answer-area" placeholder="Type your next response here…"></textarea>
+        <button class="btn btn-primary mt-sm" onclick="submitFollowUp(${followUpRound})">
+          Submit (round ${followUpRound + 1} of ${MAX_ROUNDS})
+        </button>
+      </div>`);
+    setTimeout(() => {
+      const newBox = $(`followup-answer-${followUpRound}`);
+      if (newBox) { newBox.focus(); newBox.scrollIntoView({behavior:"smooth", block:"center"}); }
+    }, 100);
   }
 };
 
