@@ -6,284 +6,324 @@
 <title>FormedAndSent</title>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
 <style>
-  /* ── TOKENS ───────────────────────────────── */
   :root {
-    --bg:       #f7f5f0;
-    --surface:  #ffffff;
-    --border:   #e8e4dc;
-    --ink:      #1a1814;
-    --ink2:     #6b6560;
-    --ink3:     #a09b94;
-    --accent:   #2d6a4f;
-    --accent2:  #52b788;
-    --warn:     #c9592a;
-    --radius:   12px;
-    --shadow:   0 2px 12px rgba(0,0,0,.07);
+    --bg:#f7f5f0; --surface:#ffffff; --border:#e8e4dc; --ink:#1a1814;
+    --ink2:#6b6560; --ink3:#a09b94; --accent:#2d6a4f; --accent2:#52b788;
+    --warn:#c9592a; --radius:12px; --shadow:0 2px 12px rgba(0,0,0,.07);
     --shadow-lg:0 8px 32px rgba(0,0,0,.10);
-    font-family: 'DM Sans', sans-serif;
+    font-family:'DM Sans',sans-serif;
   }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--ink); min-height: 100vh; }
-  h1,h2,h3 { font-family: 'Lora', serif; }
-  a { color: var(--accent); }
+  *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--ink); min-height:100vh; }
+  h1,h2,h3 { font-family:'Lora',serif; }
+  a { color:var(--accent); }
 
-  /* ── UTILS ───────────────────────────────── */
-  .hidden { display: none !important; }
-  .flex    { display: flex; }
-  .col     { flex-direction: column; }
-  .gap-sm  { gap: 8px; }
-  .gap-md  { gap: 16px; }
-  .gap-lg  { gap: 24px; }
-  .mt-sm   { margin-top: 8px; }
-  .mt-md   { margin-top: 16px; }
-  .mt-lg   { margin-top: 24px; }
-  .center  { align-items: center; justify-content: center; }
+  .hidden { display:none !important; }
+  .mt-sm { margin-top:8px; } .mt-md { margin-top:16px; } .mt-lg { margin-top:24px; }
 
-  /* ── BUTTONS ─────────────────────────────── */
-  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
-         border-radius: 8px; font-size: .9rem; font-weight: 500; cursor: pointer;
-         border: none; transition: all .15s; font-family: inherit; }
-  .btn:disabled { opacity: .5; cursor: not-allowed; }
-  .btn-primary  { background: var(--accent); color: #fff; }
-  .btn-primary:hover:not(:disabled) { background: #235c43; }
-  .btn-secondary{ background: var(--surface); color: var(--ink); border: 1.5px solid var(--border); }
-  .btn-secondary:hover:not(:disabled) { background: var(--bg); }
-  .btn-ghost    { background: transparent; color: var(--ink2); border: 1.5px solid var(--border); padding: 7px 14px; font-size: .85rem; }
-  .btn-ghost:hover { background: var(--bg); }
-  .btn-danger   { background: #fdf0ec; color: var(--warn); border: 1.5px solid #f5c9bb; }
-  .btn-danger:hover { background: #fbe0d6; }
-  .btn-google   { background: #fff; color: #3c4043; border: 1.5px solid #dadce0; font-size: 1rem; padding: 12px 24px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
-  .btn-google:hover { background: #f8f9fa; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
-  .btn-icon     { background: transparent; color: var(--ink3); border: none; padding: 4px 8px; cursor: pointer; font-size: 1rem; border-radius: 6px; }
-  .btn-icon:hover { background: var(--bg); color: var(--warn); }
+  .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 20px;
+         border-radius:8px; font-size:.9rem; font-weight:500; cursor:pointer;
+         border:none; transition:all .15s; font-family:inherit; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover:not(:disabled) { background:#235c43; }
+  .btn-secondary { background:var(--surface); color:var(--ink); border:1.5px solid var(--border); }
+  .btn-secondary:hover:not(:disabled) { background:var(--bg); }
+  .btn-ghost { background:transparent; color:var(--ink2); border:1.5px solid var(--border); padding:7px 14px; font-size:.85rem; }
+  .btn-ghost:hover { background:var(--bg); }
+  .btn-danger { background:#fdf0ec; color:var(--warn); border:1.5px solid #f5c9bb; }
+  .btn-danger:hover { background:#fbe0d6; }
+  .btn-google { background:#fff; color:#3c4043; border:1.5px solid #dadce0; font-size:1rem; padding:12px 24px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,.1); }
+  .btn-google:hover { background:#f8f9fa; box-shadow:0 2px 8px rgba(0,0,0,.12); }
+  .btn-icon { background:transparent; color:var(--ink3); border:none; padding:4px 8px; cursor:pointer; font-size:1rem; border-radius:6px; }
+  .btn-icon:hover { background:var(--bg); color:var(--warn); }
 
-  /* ── LANDING ─────────────────────────────── */
   #landing {
-    min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(145deg, #e8f4ee 0%, #f7f5f0 50%, #fdf6ee 100%);
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(145deg,#e8f4ee 0%,#f7f5f0 50%,#fdf6ee 100%);
   }
   .landing-card {
-    background: var(--surface); border-radius: 20px; padding: 56px 64px;
-    box-shadow: var(--shadow-lg); text-align: center; max-width: 440px; width: 90%;
-    border: 1px solid var(--border);
+    background:var(--surface); border-radius:20px; padding:56px 64px;
+    box-shadow:var(--shadow-lg); text-align:center; max-width:440px; width:90%;
+    border:1px solid var(--border);
   }
   .logo-mark {
-    width: 56px; height: 56px; background: var(--accent); border-radius: 14px;
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 1.6rem; margin-bottom: 20px;
+    width:56px; height:56px; background:var(--accent); border-radius:14px;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:1.6rem; margin-bottom:20px;
   }
-  .landing-card h1 { font-size: 2rem; margin-bottom: 8px; }
-  .landing-tagline { color: var(--ink2); font-size: 1rem; margin-bottom: 32px; line-height: 1.5; }
-  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
-  .signin-hint { font-size: .8rem; color: var(--ink3); margin-top: 16px; }
+  .landing-card h1 { font-size:2rem; margin-bottom:8px; }
+  .landing-tagline { color:var(--ink2); font-size:1rem; margin-bottom:32px; line-height:1.5; }
+  .divider { border:none; border-top:1px solid var(--border); margin:24px 0; }
+  .signin-hint { font-size:.8rem; color:var(--ink3); margin-top:16px; }
 
-  /* ── APP SHELL ───────────────────────────── */
-  #app { display: none; flex-direction: column; min-height: 100vh; }
+  #app { display:none; flex-direction:column; min-height:100vh; }
+  .topbar { height:60px; background:var(--surface); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; padding:0 24px; gap:16px; position:sticky; top:0; z-index:100; }
+  .topbar-logo { font-family:'Lora',serif; font-size:1.1rem; font-weight:600; color:var(--accent); }
+  .topbar-spacer { flex:1; }
+  .topbar-role { font-size:.75rem; background:#e8f4ee; color:var(--accent); padding:3px 10px; border-radius:20px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; }
+  .user-pill { display:flex; align-items:center; gap:8px; }
+  .user-pill img { width:30px; height:30px; border-radius:50%; object-fit:cover; background:var(--border); }
+  .user-pill span { font-size:.9rem; color:var(--ink2); }
 
-  /* Topbar */
-  .topbar {
-    height: 60px; background: var(--surface); border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; padding: 0 24px; gap: 16px; position: sticky; top: 0; z-index: 100;
-  }
-  .topbar-logo { font-family: 'Lora', serif; font-size: 1.1rem; font-weight: 600; color: var(--accent); }
-  .topbar-spacer { flex: 1; }
-  .topbar-role { font-size: .75rem; background: #e8f4ee; color: var(--accent); padding: 3px 10px; border-radius: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
-  .user-pill { display: flex; align-items: center; gap: 8px; }
-  .user-pill img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: var(--border); }
-  .user-pill span { font-size: .9rem; color: var(--ink2); }
-
-  /* Main layout */
-  .app-body { display: flex; flex: 1; }
+  .app-body { display:flex; flex:1; }
   .sidebar {
-    width: 220px; background: var(--surface); border-right: 1px solid var(--border);
-    padding: 24px 12px; display: flex; flex-direction: column; gap: 4px;
-    position: sticky; top: 60px; height: calc(100vh - 60px); overflow-y: auto;
+    width:220px; background:var(--surface); border-right:1px solid var(--border);
+    padding:24px 12px; display:flex; flex-direction:column; gap:4px;
+    position:sticky; top:60px; height:calc(100vh - 60px); overflow-y:auto;
   }
   .nav-item {
-    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
-    border-radius: 8px; font-size: .9rem; color: var(--ink2); cursor: pointer;
-    transition: all .12s; border: none; background: transparent; font-family: inherit; text-align: left; width: 100%;
+    display:flex; align-items:center; gap:10px; padding:10px 14px;
+    border-radius:8px; font-size:.9rem; color:var(--ink2); cursor:pointer;
+    transition:all .12s; border:none; background:transparent; font-family:inherit; text-align:left; width:100%;
   }
-  .nav-item:hover { background: var(--bg); color: var(--ink); }
-  .nav-item.active { background: #e8f4ee; color: var(--accent); font-weight: 600; }
-  .nav-section { font-size: .72rem; color: var(--ink3); padding: 12px 14px 4px; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; }
-  .main-content { flex: 1; padding: 32px; max-width: 900px; }
+  .nav-item:hover { background:var(--bg); color:var(--ink); }
+  .nav-item.active { background:#e8f4ee; color:var(--accent); font-weight:600; }
+  .nav-section { font-size:.72rem; color:var(--ink3); padding:12px 14px 4px; text-transform:uppercase; letter-spacing:.07em; font-weight:600; }
+  .main-content { flex:1; padding:32px; max-width:900px; }
 
-  /* ── CARDS & GRIDS ───────────────────────── */
-  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; gap: 16px; flex-wrap: wrap; }
-  .page-title  { font-size: 1.8rem; margin-bottom: 4px; }
-  .page-sub    { color: var(--ink2); font-size: .95rem; }
-  .card-grid   { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-  .card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 20px; transition: box-shadow .15s, transform .15s;
+  .page-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:28px; gap:16px; flex-wrap:wrap; }
+  .page-title { font-size:1.8rem; margin-bottom:4px; }
+  .page-sub { color:var(--ink2); font-size:.95rem; }
+  .card-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px; transition:box-shadow .15s,transform .15s; }
+  .card:hover { box-shadow:var(--shadow); transform:translateY(-2px); }
+  .card-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .tag { font-size:.75rem; font-weight:600; padding:3px 10px; border-radius:20px; background:#e8f4ee; color:var(--accent); }
+  .tag.blue { background:#e8f0fb; color:#2563eb; }
+  .tag.amber { background:#fef3e2; color:#d97706; }
+  .tag.purple { background:#f3e8fd; color:#7c3aed; }
+  .card-title { font-family:'Lora',serif; font-size:1.05rem; margin-bottom:6px; }
+  .card-excerpt { font-size:.85rem; color:var(--ink2); line-height:1.5; margin-bottom:14px; }
+  .card-actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .card-meta { font-size:.8rem; color:var(--ink3); margin-bottom:8px; }
+
+  .form-page { max-width:720px; }
+  .back-btn { background:none; border:none; color:var(--accent); cursor:pointer; font-size:.9rem; margin-bottom:20px; padding:0; font-family:inherit; }
+  .back-btn:hover { text-decoration:underline; }
+  .field-label { display:block; font-size:.85rem; font-weight:600; color:var(--ink2); margin-bottom:6px; margin-top:20px; }
+  .field-label:first-of-type { margin-top:24px; }
+  .field-input,.field-textarea,.field-select {
+    width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:8px;
+    font-size:.95rem; font-family:inherit; background:var(--surface); color:var(--ink);
+    transition:border .15s; outline:none;
   }
-  .card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
-  .card-top    { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  .tag { font-size: .75rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: #e8f4ee; color: var(--accent); }
-  .tag.blue { background: #e8f0fb; color: #2563eb; }
-  .tag.amber { background: #fef3e2; color: #d97706; }
-  .card-title  { font-family: 'Lora', serif; font-size: 1.05rem; margin-bottom: 6px; }
-  .card-excerpt{ font-size: .85rem; color: var(--ink2); line-height: 1.5; margin-bottom: 14px; }
-  .card-actions{ display: flex; gap: 8px; flex-wrap: wrap; }
-  .card-meta   { font-size: .8rem; color: var(--ink3); margin-bottom: 8px; }
+  .field-input:focus,.field-textarea:focus,.field-select:focus { border-color:var(--accent); }
+  .field-textarea { resize:vertical; line-height:1.6; }
+  .field-hint { font-size:.8rem; color:var(--ink3); margin-top:4px; }
+  .field-row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  .field-row > div { flex:1; min-width:140px; }
+  .question-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .q-num { font-size:.85rem; color:var(--ink3); min-width:20px; }
+  .q-input { flex:1; padding:8px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:.9rem; font-family:inherit; outline:none; }
+  .q-input:focus { border-color:var(--accent); }
+  .q-rounds { width:auto; padding:8px 8px; border:1.5px solid var(--border); border-radius:8px; font-size:.85rem; font-family:inherit; outline:none; background:var(--surface); }
+  .form-actions { display:flex; gap:12px; margin-top:32px; flex-wrap:wrap; }
+  .class-checkboxes { display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+  .class-checkbox { display:flex; align-items:center; gap:10px; padding:10px 14px; border:1.5px solid var(--border); border-radius:8px; cursor:pointer; transition:border .12s; }
+  .class-checkbox:hover { border-color:var(--accent2); }
+  .class-checkbox input { accent-color:var(--accent); width:16px; height:16px; }
+  .class-checkbox label { cursor:pointer; font-size:.92rem; }
 
-  /* ── FORMS ───────────────────────────────── */
-  .form-page   { max-width: 680px; }
-  .back-btn    { background: none; border: none; color: var(--accent); cursor: pointer; font-size: .9rem; margin-bottom: 20px; padding: 0; font-family: inherit; }
-  .back-btn:hover { text-decoration: underline; }
-  .field-label { display: block; font-size: .85rem; font-weight: 600; color: var(--ink2); margin-bottom: 6px; margin-top: 20px; }
-  .field-label:first-of-type { margin-top: 24px; }
-  .field-input, .field-textarea, .field-select {
-    width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px;
-    font-size: .95rem; font-family: inherit; background: var(--surface); color: var(--ink);
-    transition: border .15s; outline: none;
+  /* Type picker */
+  .type-picker { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .type-card { border:2px solid var(--border); border-radius:var(--radius); padding:18px; cursor:pointer; transition:all .15s; background:var(--surface); }
+  .type-card:hover { border-color:var(--accent2); }
+  .type-card.selected { border-color:var(--accent); background:#e8f4ee; }
+  .type-card h3 { font-size:1rem; margin-bottom:6px; }
+  .type-card p { font-size:.83rem; color:var(--ink2); line-height:1.5; }
+
+  /* Branching builder */
+  .branch-section {
+    background:#fdfcf8; border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px 24px; margin-top:16px;
   }
-  .field-input:focus, .field-textarea:focus, .field-select:focus { border-color: var(--accent); }
-  .field-textarea { resize: vertical; line-height: 1.6; }
-  .field-hint  { font-size: .8rem; color: var(--ink3); margin-top: 4px; }
-  .question-row{ display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-  .q-num       { font-size: .85rem; color: var(--ink3); min-width: 20px; }
-  .q-input     { flex: 1; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: .9rem; font-family: inherit; outline: none; }
-  .q-input:focus { border-color: var(--accent); }
-  .form-actions{ display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
-  .class-checkboxes { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
-  .class-checkbox { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; transition: border .12s; }
-  .class-checkbox:hover { border-color: var(--accent2); }
-  .class-checkbox input { accent-color: var(--accent); width: 16px; height: 16px; }
-  .class-checkbox label { cursor: pointer; font-size: .92rem; }
+  .branch-section-header {
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:12px;
+  }
+  .branch-section-header h3 { font-size:1.05rem; color:var(--accent); }
+  .story-block,.learnmore-block {
+    background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius);
+    padding:16px 20px; margin-top:12px;
+  }
+  .story-block summary,.learnmore-block summary {
+    cursor:pointer; font-weight:600; font-size:.95rem; padding:4px 0; outline:none;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  .story-block summary::-webkit-details-marker,.learnmore-block summary::-webkit-details-marker { display:none; }
+  .story-block summary::before,.learnmore-block summary::before {
+    content:"▸"; color:var(--ink3); transition:transform .15s; display:inline-block;
+  }
+  .story-block[open] summary::before,.learnmore-block[open] summary::before { transform:rotate(90deg); }
+  .summary-content { flex:1; display:flex; align-items:center; gap:8px; }
+  .summary-actions { display:flex; gap:6px; }
 
-  /* ── STUDENT ASSIGNMENT VIEW ─────────────── */
-  .assignment-view { max-width: 720px; }
-  .progress-bar-wrap { background: var(--border); border-radius: 99px; height: 6px; margin-bottom: 28px; overflow: hidden; }
-  .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width .4s ease; }
+  /* Student assignment cards */
+  .assignment-view { max-width:720px; }
+  .progress-bar-wrap { background:var(--border); border-radius:99px; height:6px; margin-bottom:28px; overflow:hidden; }
+  .progress-bar-fill { height:100%; background:var(--accent); border-radius:99px; transition:width .4s ease; }
   .passage-box {
-    background: #fdfcf8; border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 28px 32px; margin-bottom: 24px; line-height: 1.8; font-family: 'Lora', serif;
-    font-size: 1rem; color: var(--ink); max-height: 320px; overflow-y: auto;
+    background:#fdfcf8; border:1px solid var(--border); border-radius:var(--radius);
+    padding:28px 32px; margin-bottom:24px; line-height:1.8; font-family:'Lora',serif;
+    font-size:1rem; color:var(--ink); max-height:420px; overflow-y:auto;
   }
-  .question-box  { background: var(--surface); border: 1.5px solid var(--accent2); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px; }
-  .question-label{ font-size: .78rem; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
-  .question-text { font-family: 'Lora', serif; font-size: 1.05rem; line-height: 1.6; }
-  .answer-area   { width: 100%; min-height: 100px; padding: 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: .95rem; font-family: inherit; resize: vertical; transition: border .15s; outline: none; }
-  .answer-area:focus { border-color: var(--accent); }
+  .question-box { background:var(--surface); border:1.5px solid var(--accent2); border-radius:var(--radius); padding:20px 24px; margin-bottom:16px; }
+  .question-label { font-size:.78rem; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
+  .question-text { font-family:'Lora',serif; font-size:1.05rem; line-height:1.6; }
+  .answer-area { width:100%; min-height:100px; padding:14px; border:1.5px solid var(--border); border-radius:8px; font-size:.95rem; font-family:inherit; resize:vertical; transition:border .15s; outline:none; }
+  .answer-area:focus { border-color:var(--accent); }
   .ai-response {
-    background: #f0f7f4; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
-    padding: 16px 20px; margin: 16px 0; font-size: .95rem; line-height: 1.7; color: var(--ink);
-    animation: fadeIn .3s ease;
+    background:#f0f7f4; border-left:3px solid var(--accent); border-radius:0 8px 8px 0;
+    padding:16px 20px; margin:16px 0; font-size:.95rem; line-height:1.7; color:var(--ink);
+    animation:fadeIn .3s ease;
   }
-  .ai-label { font-size: .75rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  .ai-label { font-size:.75rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
   .typing-dots span {
-    display: inline-block; width: 6px; height: 6px; background: var(--accent); border-radius: 50%;
-    margin: 0 2px; animation: bounce .9s infinite;
+    display:inline-block; width:6px; height:6px; background:var(--accent); border-radius:50%;
+    margin:0 2px; animation:bounce .9s infinite;
   }
-  .typing-dots span:nth-child(2) { animation-delay: .15s; }
-  .typing-dots span:nth-child(3) { animation-delay: .3s; }
-  @keyframes bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-  .history-item  { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 12px; opacity: .75; }
-  .history-q     { font-size: .85rem; color: var(--ink2); margin-bottom: 4px; font-weight: 500; }
-  .history-a     { font-size: .9rem; margin-bottom: 8px; }
-  .history-ai    { font-size: .85rem; color: var(--accent); font-style: italic; border-left: 2px solid var(--accent2); padding-left: 10px; }
-  .exchange-block { margin-bottom: 16px; }
-.student-prior-answer {
-  background: var(--bg); padding: 10px 14px; border-radius: 8px;
-  font-size: .9rem; margin-bottom: 8px; color: var(--ink2);
-  border-left: 3px solid var(--ink3);
-}
-.followup-input-block {
-  background: var(--surface); border: 1.5px solid var(--accent2); border-radius: var(--radius);
-  padding: 18px 20px; margin-top: 16px; margin-bottom: 16px;
-  animation: fadeIn .3s ease;
-}
-.followup-prompt {
-  font-size: .82rem; font-weight: 600; color: var(--accent);
-  margin-bottom: 8px; text-transform: uppercase; letter-spacing: .04em;
-}
+  .typing-dots span:nth-child(2) { animation-delay:.15s; }
+  .typing-dots span:nth-child(3) { animation-delay:.3s; }
+  @keyframes bounce { 0%,80%,100% { transform:translateY(0); } 40% { transform:translateY(-6px); } }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
 
-  /* ── COMPLETION ───────────────────────────── */
-  .completion-card { text-align: center; max-width: 500px; margin: 60px auto; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 48px 40px; box-shadow: var(--shadow-lg); }
-  .completion-icon { font-size: 3rem; margin-bottom: 16px; }
-  .completion-card h2 { margin-bottom: 8px; }
-  .completion-card p  { color: var(--ink2); line-height: 1.6; margin-bottom: 24px; }
+  .exchange-block { margin-bottom:16px; }
+  .student-prior-answer {
+    background:var(--bg); padding:10px 14px; border-radius:8px;
+    font-size:.9rem; margin-bottom:8px; color:var(--ink2);
+    border-left:3px solid var(--ink3);
+  }
+  .followup-input-block {
+    background:var(--surface); border:1.5px solid var(--accent2); border-radius:var(--radius);
+    padding:18px 20px; margin-top:16px; margin-bottom:16px;
+    animation:fadeIn .3s ease;
+  }
+  .followup-prompt {
+    font-size:.82rem; font-weight:600; color:var(--accent);
+    margin-bottom:8px; text-transform:uppercase; letter-spacing:.04em;
+  }
 
-  /* ── RESPONSES TABLE ─────────────────────── */
-  .responses-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-  .responses-table th { text-align: left; padding: 10px 14px; font-size: .78rem; font-weight: 700; color: var(--ink2); text-transform: uppercase; letter-spacing: .05em; border-bottom: 2px solid var(--border); }
-  .responses-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
-  .responses-table tr:last-child td { border-bottom: none; }
-  .responses-table tr:hover td { background: var(--bg); }
-  .expand-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-size: .85rem; font-family: inherit; padding: 0; }
-  .expand-btn:hover { text-decoration: underline; }
+  /* Story chooser */
+  .story-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:18px; }
+  .story-card {
+    background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius);
+    overflow:hidden; cursor:pointer; transition:all .15s; display:flex; flex-direction:column;
+  }
+  .story-card:hover { border-color:var(--accent2); transform:translateY(-3px); box-shadow:var(--shadow); }
+  .story-card.completed { opacity:.65; }
+  .story-card.completed::after { content:"✓ Done"; position:absolute; }
+  .story-img-wrap { width:100%; aspect-ratio:16/10; background:#e8f4ee; overflow:hidden; position:relative; }
+  .story-img-wrap img { width:100%; height:100%; object-fit:cover; }
+  .story-img-placeholder {
+    width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+    font-size:2.5rem; color:var(--accent);
+  }
+  .story-card-body { padding:16px 18px; flex:1; display:flex; flex-direction:column; }
+  .story-card-title { font-family:'Lora',serif; font-size:1.05rem; margin-bottom:6px; }
+  .story-card-meta { font-size:.8rem; color:var(--ink3); margin-top:auto; padding-top:8px; }
+  .story-status-badge {
+    position:absolute; top:10px; right:10px; background:var(--accent); color:#fff;
+    font-size:.72rem; font-weight:700; padding:4px 10px; border-radius:20px; text-transform:uppercase; letter-spacing:.04em;
+  }
 
-  /* ── EMPTY / LOADING ─────────────────────── */
-  .empty-state { text-align: center; padding: 60px 20px; color: var(--ink3); }
-  .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
-  .empty-state p { font-size: .95rem; }
-  .loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; margin: 40px auto; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  /* Branch picker (Learn More) */
+  .branch-picker-card {
+    background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius);
+    padding:18px 22px; margin-bottom:12px; cursor:pointer; transition:all .15s; display:flex; align-items:center; gap:16px;
+  }
+  .branch-picker-card:hover { border-color:var(--accent2); transform:translateX(4px); }
+  .branch-picker-card.completed { opacity:.6; }
+  .branch-icon { width:42px; height:42px; background:#e8f4ee; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; color:var(--accent); }
+  .branch-body { flex:1; }
+  .branch-title { font-family:'Lora',serif; font-size:1rem; margin-bottom:3px; }
+  .branch-desc { font-size:.85rem; color:var(--ink3); }
 
-  /* ── TOAST ───────────────────────────────── */
+  .completion-card { text-align:center; max-width:500px; margin:60px auto; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:48px 40px; box-shadow:var(--shadow-lg); }
+  .completion-icon { font-size:3rem; margin-bottom:16px; }
+  .completion-card h2 { margin-bottom:8px; }
+  .completion-card p { color:var(--ink2); line-height:1.6; margin-bottom:24px; }
+
+  .responses-table { width:100%; border-collapse:collapse; font-size:.9rem; }
+  .responses-table th { text-align:left; padding:10px 14px; font-size:.78rem; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.05em; border-bottom:2px solid var(--border); }
+  .responses-table td { padding:12px 14px; border-bottom:1px solid var(--border); vertical-align:top; }
+  .responses-table tr:last-child td { border-bottom:none; }
+  .responses-table tr:hover td { background:var(--bg); }
+  .expand-btn { background:none; border:none; color:var(--accent); cursor:pointer; font-size:.85rem; font-family:inherit; padding:0; }
+  .expand-btn:hover { text-decoration:underline; }
+
+  .empty-state { text-align:center; padding:60px 20px; color:var(--ink3); }
+  .empty-state .empty-icon { font-size:2.5rem; margin-bottom:12px; }
+  .empty-state p { font-size:.95rem; }
+  .loading-spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; margin:40px auto; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
   #toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
-    background: #1a1814; color: #fff; padding: 12px 20px; border-radius: 8px;
-    font-size: .9rem; z-index: 9999; transition: transform .25s; max-width: 340px; text-align: center;
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px);
+    background:#1a1814; color:#fff; padding:12px 20px; border-radius:8px;
+    font-size:.9rem; z-index:9999; transition:transform .25s; max-width:340px; text-align:center;
   }
-  #toast.show { transform: translateX(-50%) translateY(0); }
-  #toast.error { background: var(--warn); }
+  #toast.show { transform:translateX(-50%) translateY(0); }
+  #toast.error { background:var(--warn); }
 
-  /* ── MODAL ───────────────────────────────── */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; }
-  .modal { background: var(--surface); border-radius: 16px; padding: 32px; max-width: 560px; width: 100%; box-shadow: var(--shadow-lg); max-height: 90vh; overflow-y: auto; }
-  .modal h2 { margin-bottom: 16px; }
-  .modal-actions { display: flex; gap: 12px; margin-top: 24px; justify-content: flex-end; }
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:500; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .modal { background:var(--surface); border-radius:16px; padding:32px; max-width:560px; width:100%; box-shadow:var(--shadow-lg); max-height:90vh; overflow-y:auto; }
+  .modal h2 { margin-bottom:16px; }
+  .modal-actions { display:flex; gap:12px; margin-top:24px; justify-content:flex-end; }
 
-  /* ── STUDENT CLASS LIST ───────────────────── */
-  .student-home { max-width: 680px; }
-  .student-home h1 { margin-bottom: 6px; }
-  .welcome-sub { color: var(--ink2); margin-bottom: 28px; }
-  .assignment-student-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px; transition: box-shadow .15s; }
-  .assignment-student-card:hover { box-shadow: var(--shadow); }
-  .asc-icon { width: 44px; height: 44px; background: #e8f4ee; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
-  .asc-body { flex: 1; }
-  .asc-title { font-family: 'Lora', serif; font-size: 1rem; margin-bottom: 3px; }
-  .asc-meta { font-size: .82rem; color: var(--ink3); }
-  .status-badge { font-size: .75rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
-  .status-badge.done { background: #e8f4ee; color: var(--accent); }
-  .status-badge.todo { background: #fef3e2; color: #d97706; }
+  .student-home { max-width:680px; }
+  .student-home h1 { margin-bottom:6px; }
+  .welcome-sub { color:var(--ink2); margin-bottom:28px; }
+  .assignment-student-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px 24px; margin-bottom:12px; display:flex; align-items:center; gap:16px;
+    transition:box-shadow .15s; cursor:pointer;
+  }
+  .assignment-student-card:hover { box-shadow:var(--shadow); }
+  .asc-icon { width:44px; height:44px; background:#e8f4ee; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
+  .asc-body { flex:1; }
+  .asc-title { font-family:'Lora',serif; font-size:1rem; margin-bottom:3px; }
+  .asc-meta { font-size:.82rem; color:var(--ink3); }
+  .status-badge { font-size:.75rem; font-weight:600; padding:3px 10px; border-radius:20px; }
+  .status-badge.done { background:#e8f4ee; color:var(--accent); }
+  .status-badge.todo { background:#fef3e2; color:#d97706; }
+  .status-badge.partial { background:#e8f0fb; color:#2563eb; }
 
-  @media (max-width: 640px) {
-    .sidebar { display: none; }
-    .main-content { padding: 20px 16px; }
-    .landing-card { padding: 36px 24px; }
-    .passage-box { padding: 18px; }
+  /* Progress chip strip on student journey */
+  .journey-progress {
+    display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;
+    background:var(--surface); padding:12px 16px; border-radius:var(--radius); border:1px solid var(--border);
+    font-size:.85rem; align-items:center;
+  }
+  .journey-progress strong { color:var(--accent); }
+
+  @media (max-width:640px) {
+    .sidebar { display:none; }
+    .main-content { padding:20px 16px; }
+    .landing-card { padding:36px 24px; }
+    .passage-box { padding:18px; }
+    .type-picker { grid-template-columns:1fr; }
   }
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════
-     LANDING
-═══════════════════════════════════════ -->
-<div id="landing"> 
+<div id="landing">
   <div class="landing-card">
     <div class="logo-mark">📖</div>
     <h1>FormedAndSent</h1>
     <p class="landing-tagline">AI-powered reading assignments with personalised Socratic feedback for every student.</p>
     <hr class="divider"/>
     <button class="btn btn-google" onclick="signIn()">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.3 0 6.2 1.2 8.5 3.1l6.3-6.3C34.9 2.9 29.8 1 24 1 14.8 1 7 6.6 3.7 14.4l7.4 5.7C12.7 14 17.9 9.5 24 9.5z"/><path fill="#4285F4" d="M46.6 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.5 2.9-2.2 5.4-4.7 7l7.3 5.7c4.3-4 6.8-9.9 6.8-16.7z" /><path fill="#FBBC05" d="M11.1 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.1.8-4.6L2.9 13.7A23 23 0 0 0 1 24c0 3.7.9 7.2 2.5 10.3l7.6-5.7z"/><path fill="#34A853" d="M24 47c6 0 11-2 14.7-5.3l-7.3-5.7c-2 1.4-4.6 2.2-7.4 2.2-6.1 0-11.3-4.1-13.1-9.7L3.3 34c3.2 7.8 11 13 20.7 13z"/></svg>
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.3 0 6.2 1.2 8.5 3.1l6.3-6.3C34.9 2.9 29.8 1 24 1 14.8 1 7 6.6 3.7 14.4l7.4 5.7C12.7 14 17.9 9.5 24 9.5z"/><path fill="#4285F4" d="M46.6 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.5 2.9-2.2 5.4-4.7 7l7.3 5.7c4.3-4 6.8-9.9 6.8-16.7z"/><path fill="#FBBC05" d="M11.1 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.1.8-4.6L2.9 13.7A23 23 0 0 0 1 24c0 3.7.9 7.2 2.5 10.3l7.6-5.7z"/><path fill="#34A853" d="M24 47c6 0 11-2 14.7-5.3l-7.3-5.7c-2 1.4-4.6 2.2-7.4 2.2-6.1 0-11.3-4.1-13.1-9.7L3.3 34c3.2 7.8 11 13 20.7 13z"/></svg>
       Sign in with Google
     </button>
     <p class="signin-hint">Use your school Google account</p>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════
-     APP SHELL
-═══════════════════════════════════════ -->
 <div id="app">
-  <!-- Topbar -->
   <header class="topbar">
     <span class="topbar-logo">📖 FormedAndSent</span>
     <span class="topbar-spacer"></span>
@@ -296,31 +336,25 @@
   </header>
 
   <div class="app-body">
-    <!-- Sidebar -->
     <nav class="sidebar" id="sidebar"></nav>
-    <!-- Main -->
     <main class="main-content" id="main-content">
       <div class="loading-spinner"></div>
     </main>
   </div>
 </div>
 
-<!-- Toast -->
 <div id="toast"></div>
 
-<!-- ═══════════════════════════════════════
-     FIREBASE + APP LOGIC
-═══════════════════════════════════════ -->
 <script type="module">
-import { initializeApp }           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
-                                   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, deleteDoc,
-         serverTimestamp, query, where, orderBy }
-                                   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+         serverTimestamp, query, where }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 /* ─────────────────────────────────────────────
-   🔧  CONFIG  — replace before deploying
+   🔧  CONFIG  — paste your existing values here
 ──────────────────────────────────────────────── */
 const FIREBASE_CONFIG = {
     apiKey: "AIzaSyDpwK7arl0FS6uKnYyAI3O_hgkwM178A9Y",
@@ -334,21 +368,25 @@ const FIREBASE_CONFIG = {
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHKV-_Un-9xH9c0RRpUdcz7CCsZZYUhnldEgkcJX8bH8rNmT_ZUKdRuYrejhVFGIbbvg/exec";
 /* ──────────────────────────────────────────── */
 
-const fbApp  = initializeApp(FIREBASE_CONFIG);
-const auth   = getAuth(fbApp);
-const db     = getFirestore(fbApp);
-const gp     = new GoogleAuthProvider();
+const fbApp = initializeApp(FIREBASE_CONFIG);
+const auth  = getAuth(fbApp);
+const db    = getFirestore(fbApp);
+const gp    = new GoogleAuthProvider();
 gp.addScope("https://www.googleapis.com/auth/classroom.coursework.students");
 gp.addScope("https://www.googleapis.com/auth/classroom.courses.readonly");
 gp.addScope("https://www.googleapis.com/auth/spreadsheets");
 
-/* ── STATE ───────────────────────────────────── */
-let user = null, role = null, gToken = null;
-let session = [];       // [{question, answer, feedback}]
-let qIndex  = 0;
-let curAssignment = null;
+let user=null, role=null, gToken=null;
+let curAssignment=null;
+let session=[];               // global flat session list (for save)
+let qIndex=0;                 // index within current question list
+let followUpRound=0;
+let MAX_ROUNDS_FOR_Q=5;       // dynamic per question
 
-/* ── HELPERS ─────────────────────────────────── */
+// Branching state
+let journey={};               // { storiesCompleted:[id], branchesCompleted:[id], currentStoryId, currentBranchId, phase }
+// phase: "story-pick" | "story-questions" | "branch-pick" | "branch-questions" | "complete"
+
 const $  = id => document.getElementById(id);
 const mc = () => $("main-content");
 
@@ -356,10 +394,21 @@ function toast(msg, isError=false) {
   const t = $("toast");
   t.textContent = msg;
   t.className = isError ? "error show" : "show";
-  setTimeout(() => t.className = "", 3000);
+  setTimeout(()=> t.className="", 3000);
 }
 
-/* ── AUTH ────────────────────────────────────── */
+function escapeHTML(s) { return (s||"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
+
+// Convert a Google Drive share URL to a viewable image URL
+function normaliseImageURL(url) {
+  if (!url) return "";
+  url = url.trim();
+  // Google Drive share link → direct view link
+  const m = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/);
+  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
+  return url;
+}
+
 window.signIn = async () => {
   try {
     const result = await signInWithPopup(auth, gp);
@@ -377,37 +426,32 @@ onAuthStateChanged(auth, async u => {
   } else {
     role = "student";
     await setDoc(doc(db, "users", u.uid), {
-      name: u.displayName, email: u.email, role: "student", createdAt: serverTimestamp()
+      name:u.displayName, email:u.email, role:"student", createdAt:serverTimestamp()
     });
   }
   bootApp();
 });
 
-function showLanding() {
-  $("landing").style.display = "flex";
-  $("app").style.display = "none";
-}
+function showLanding() { $("landing").style.display="flex"; $("app").style.display="none"; }
 
 function bootApp() {
-  $("landing").style.display = "none";
-  $("app").style.display = "flex";
+  $("landing").style.display="none";
+  $("app").style.display="flex";
   $("user-name").textContent = user.displayName.split(" ")[0];
   $("user-avatar").src = user.photoURL || "";
-  $("topbar-role").textContent = role === "teacher" ? "Teacher" : "Student";
+  $("topbar-role").textContent = role==="teacher" ? "Teacher" : "Student";
   buildSidebar();
-  if (role === "teacher") renderTeacherHome();
+  if (role==="teacher") renderTeacherHome();
   else renderStudentHome();
 }
 
-/* ── SIDEBAR ─────────────────────────────────── */
 function buildSidebar() {
   const sb = $("sidebar");
-  if (role === "teacher") {
+  if (role==="teacher") {
     sb.innerHTML = `
       <span class="nav-section">Teacher</span>
       <button class="nav-item active" id="nav-assignments" onclick="renderTeacherHome()">📋 Assignments</button>
-      <button class="nav-item" id="nav-responses" onclick="renderAllResponses()">📊 Responses</button>
-      <span class="nav-section" style="margin-top:auto"></span>`;
+      <button class="nav-item" id="nav-responses" onclick="renderAllResponses()">📊 Responses</button>`;
   } else {
     sb.innerHTML = `
       <span class="nav-section">Student</span>
@@ -415,9 +459,8 @@ function buildSidebar() {
   }
 }
 function setActiveNav(id) {
-  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
-  const el = $(id);
-  if (el) el.classList.add("active");
+  document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
+  const el = $(id); if (el) el.classList.add("active");
 }
 
 /* ═══════════════════════════════════════════════
@@ -428,11 +471,11 @@ async function renderTeacherHome() {
   mc().innerHTML = `
     <div class="page-header">
       <div><h1 class="page-title">Assignments</h1><p class="page-sub">Create and manage AI-powered reading tasks</p></div>
-      <button class="btn btn-primary" onclick="renderCreateAssignment()">+ New Assignment</button>
+      <button class="btn btn-primary" onclick="renderTypePicker()">+ New Assignment</button>
     </div>
     <div id="asgn-grid"><div class="loading-spinner"></div></div>`;
 
-  const q   = query(collection(db,"assignments"), where("teacherId","==",user.uid));
+  const q = query(collection(db,"assignments"), where("teacherId","==",user.uid));
   const snp = await getDocs(q);
   const grid = $("asgn-grid");
   if (snp.empty) {
@@ -443,14 +486,18 @@ async function renderTeacherHome() {
   grid.innerHTML = "";
   snp.forEach(d => {
     const a = d.data();
+    const isBranching = a.type === "branching";
+    const summary = isBranching
+      ? `${(a.stories||[]).length} stories · ${(a.branches||[]).length} learn-more options`
+      : `${(a.questions||[]).length} questions`;
     grid.innerHTML += `
       <div class="card">
         <div class="card-top">
-          <span class="tag">${a.subject||"General"}</span>
-          <span style="font-size:.8rem;color:var(--ink3)">${(a.questions||[]).length}Q</span>
+          <span class="tag ${isBranching?'purple':''}">${isBranching ? '🌿 Branching' : (a.subject||'Linear')}</span>
+          <span style="font-size:.8rem;color:var(--ink3)">${summary}</span>
         </div>
-        <p class="card-title">${a.title}</p>
-        <p class="card-excerpt">${(a.passage||"").substring(0,90)}…</p>
+        <p class="card-title">${escapeHTML(a.title)}</p>
+        <p class="card-excerpt">${escapeHTML((a.passage||a.intro||"").substring(0,90))}…</p>
         <p class="card-meta">Posted to: ${(a.classNames||[]).join(", ")||"No classes"}</p>
         <div class="card-actions">
           <button class="btn btn-ghost" onclick="renderResponses('${d.id}','${a.title.replace(/'/g,"\\'")}')">📊 Responses</button>
@@ -463,99 +510,114 @@ async function renderTeacherHome() {
 }
 
 /* ═══════════════════════════════════════════════
-   TEACHER — CREATE / EDIT ASSIGNMENT
+   TEACHER — TYPE PICKER (linear vs branching)
 ═══════════════════════════════════════════════ */
-async function renderCreateAssignment(id, data) {
+window.renderTypePicker = () => {
+  mc().innerHTML = `
+    <button class="back-btn" onclick="renderTeacherHome()">← Back</button>
+    <h1 class="page-title">New Assignment</h1>
+    <p class="page-sub" style="margin-bottom:24px">Pick the format that fits your lesson</p>
+    <div class="type-picker">
+      <div class="type-card" onclick="renderCreateAssignment(null,null,'linear')">
+        <h3>📄 Linear</h3>
+        <p>One passage, students answer questions in order. Best for a single text you want everyone to read.</p>
+      </div>
+      <div class="type-card" onclick="renderCreateAssignment(null,null,'branching')">
+        <h3>🌿 Branching (Choose Your Own)</h3>
+        <p>Multiple stories to choose from, each with optional "Learn More" deep dives. Great for variety and student agency.</p>
+      </div>
+    </div>`;
+};
+
+/* ═══════════════════════════════════════════════
+   TEACHER — CREATE / EDIT (delegates by type)
+═══════════════════════════════════════════════ */
+async function renderCreateAssignment(id, data, type) {
   const d = data || {};
-  const questions = d.questions || [""];
-  const classes   = await fetchTeacherClasses();
+  type = type || d.type || "linear";
+  const classes = await fetchTeacherClasses();
+  if (type === "branching") return renderBranchingForm(id, d, classes);
+  return renderLinearForm(id, d, classes);
+}
+
+/* ────────────────────────────────────────────
+   LINEAR FORM
+──────────────────────────────────────────── */
+function renderLinearForm(id, d, classes) {
+  const questions = d.questions || [{ text:"", maxRounds:5 }];
+  // Migrate old format (array of strings) → new format
+  const normalized = questions.map(q => typeof q === "string" ? { text:q, maxRounds:5 } : q);
 
   mc().innerHTML = `
     <div class="form-page">
-      <button class="back-btn" onclick="renderTeacherHome()">← Back to Assignments</button>
-      <h1 class="page-title">${id ? "Edit" : "New"} Assignment</h1>
+      <button class="back-btn" onclick="renderTeacherHome()">← Back</button>
+      <h1 class="page-title">${id ? "Edit" : "New"} Linear Assignment</h1>
+      <p class="page-sub" style="margin-bottom:8px">📄 Single passage, sequential questions</p>
+
+      <input type="hidden" id="f-type" value="linear"/>
 
       <label class="field-label">Title *</label>
-      <input id="f-title" class="field-input" value="${d.title||""}" placeholder="e.g. The Water Cycle — Reading Response"/>
+      <input id="f-title" class="field-input" value="${escapeHTML(d.title||'')}" placeholder="e.g. The Water Cycle — Reading Response"/>
 
       <label class="field-label">Subject Tag</label>
-      <input id="f-subject" class="field-input" value="${d.subject||""}" placeholder="e.g. Science, English, History…"/>
+      <input id="f-subject" class="field-input" value="${escapeHTML(d.subject||'')}" placeholder="e.g. Science, English, History…"/>
 
       <label class="field-label">Reading Passage *</label>
-      <textarea id="f-passage" class="field-textarea" rows="9" placeholder="Paste the article or passage here…">${d.passage||""}</textarea>
+      <textarea id="f-passage" class="field-textarea" rows="9" placeholder="Paste the article or passage here…">${escapeHTML(d.passage||'')}</textarea>
 
       <label class="field-label">Questions <span style="color:var(--ink3);font-weight:400">(students answer each in turn)</span></label>
       <div id="q-container">
-        ${questions.map((q,i) => questionRow(i,q)).join("")}
+        ${normalized.map((q,i)=>linearQuestionRow(i,q.text,q.maxRounds)).join("")}
       </div>
-      <button class="btn btn-ghost mt-sm" onclick="addQuestionRow()">+ Add Question</button>
+      <button class="btn btn-ghost mt-sm" onclick="addLinearQuestion()">+ Add Question</button>
 
-      <label class="field-label">AI Tutor Persona Instructions</label>
-      <textarea id="f-instructions" class="field-textarea" rows="4" placeholder="e.g. Encourage students to quote the text. Never reveal the answer directly. After each response, ask one follow-up that deepens understanding.">${d.instructions||""}</textarea>
-      <p class="field-hint">This shapes how the AI responds to each student. You are always the Socratic tutor role.</p>
+      <label class="field-label">AI Tutor Instructions</label>
+      <textarea id="f-instructions" class="field-textarea" rows="6" placeholder="Encourage students to quote the text. Never reveal the answer directly. After each response, ask one follow-up that deepens understanding.">${escapeHTML(d.instructions||'')}</textarea>
+      <p class="field-hint">This shapes how the AI responds to each student. The AI is always Socratic.</p>
 
       <label class="field-label">Post to Google Classroom Classes</label>
-      <p class="field-hint" style="margin-bottom:8px">Students will see this assignment appear in their Classroom feed with a link to your site.</p>
-      <div class="class-checkboxes" id="class-checks">
-        ${classes.length === 0
-          ? `<p style="color:var(--ink3);font-size:.85rem">⚠️ No classes found — make sure your Apps Script URL is set and you've granted access.</p>`
-          : classes.map(c => `
-            <label class="class-checkbox">
-              <input type="checkbox" value="${c.id}" data-name="${c.name}" ${(d.classIds||[]).includes(c.id)?"checked":""}/>
-              <label>${c.name} <span style="color:var(--ink3);font-size:.8rem">(${c.section||""})</span></label>
-            </label>`).join("")}
-      </div>
+      ${renderClassCheckboxes(classes, d.classIds||[])}
 
       <div class="form-actions">
         <button class="btn btn-secondary" onclick="renderTeacherHome()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveAssignment('${id||""}')">
-          ${id ? "Save Changes" : "Publish to Classroom"}
-        </button>
+        <button class="btn btn-primary" onclick="saveLinear('${id||""}')">${id ? "Save Changes" : "Publish"}</button>
       </div>
     </div>`;
 }
 
-function questionRow(i, val="") {
+function linearQuestionRow(i, val="", rounds=5) {
+  const opts = [1,2,3,4,5].map(n => `<option value="${n}" ${rounds==n?'selected':''}>${n} round${n>1?'s':''}</option>`).join("");
   return `<div class="question-row" id="qrow-${i}">
     <span class="q-num">${i+1}.</span>
-    <input class="q-input" id="q-${i}" value="${val}" placeholder="Question ${i+1}…"/>
-    <button class="btn-icon" onclick="removeQuestionRow(${i})" title="Remove">✕</button>
+    <input class="q-input" id="q-${i}" value="${escapeHTML(val)}" placeholder="Question ${i+1}…"/>
+    <select class="q-rounds" id="qr-${i}" title="Max coaching rounds">${opts}</select>
+    <button class="btn-icon" onclick="removeLinearQuestion(${i})" title="Remove">✕</button>
   </div>`;
 }
-
-window.addQuestionRow = () => {
+window.addLinearQuestion = () => {
   const c = $("q-container");
-  const i = c.children.length;
-  c.insertAdjacentHTML("beforeend", questionRow(i));
+  c.insertAdjacentHTML("beforeend", linearQuestionRow(c.children.length));
 };
-window.removeQuestionRow = i => {
-  const el = $(`qrow-${i}`); if (el) el.remove();
-};
+window.removeLinearQuestion = i => { const el=$(`qrow-${i}`); if(el) el.remove(); };
 
-async function fetchTeacherClasses() {
-  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith("REPLACE")) return [];
-  try {
-    const r = await fetch(`${APPS_SCRIPT_URL}?action=getClasses&token=${encodeURIComponent(gToken||"")}`);
-    const j = await r.json();
-    return j.classes || [];
-  } catch(e) { return []; }
-}
-
-window.saveAssignment = async (existingId) => {
+window.saveLinear = async (existingId) => {
   const title   = $("f-title").value.trim();
   const passage = $("f-passage").value.trim();
   if (!title || !passage) { toast("Title and passage are required.", true); return; }
 
-  const qs = Array.from(document.querySelectorAll(".q-input")).map(i=>i.value.trim()).filter(Boolean);
+  const qs = [];
+  document.querySelectorAll(".q-input").forEach((inp,idx) => {
+    const t = inp.value.trim();
+    if (t) {
+      const r = parseInt(document.querySelectorAll(".q-rounds")[idx].value, 10) || 5;
+      qs.push({ text:t, maxRounds:r });
+    }
+  });
   if (!qs.length) { toast("Add at least one question.", true); return; }
 
-  const checks = document.querySelectorAll('#class-checks input[type=checkbox]:checked');
-  const classIds   = Array.from(checks).map(c => c.value);
-  const classNames = Array.from(checks).map(c => c.dataset.name);
-
-  const assignmentUrl = window.location.href.split("?")[0];
+  const { classIds, classNames } = readClassChecks();
   const payload = {
-    title, passage,
+    type:"linear", title, passage,
     subject:      $("f-subject").value.trim(),
     questions:    qs,
     instructions: $("f-instructions").value.trim(),
@@ -564,7 +626,289 @@ window.saveAssignment = async (existingId) => {
     teacherName:  user.displayName,
     updatedAt:    serverTimestamp()
   };
+  await commonSaveAndPost(existingId, payload);
+};
 
+/* ────────────────────────────────────────────
+   BRANCHING FORM
+──────────────────────────────────────────── */
+function renderBranchingForm(id, d, classes) {
+  const stories  = (d.stories  || []).length ? d.stories  : [emptyStory(0)];
+  const branches = (d.branches || []).length ? d.branches : [emptyBranch(0)];
+  const reqStories  = d.requiredStories  ?? Math.min(1, stories.length);
+  const reqBranches = d.requiredBranches ?? Math.min(1, branches.length);
+
+  mc().innerHTML = `
+    <div class="form-page">
+      <button class="back-btn" onclick="renderTeacherHome()">← Back</button>
+      <h1 class="page-title">${id ? "Edit" : "New"} Branching Assignment</h1>
+      <p class="page-sub" style="margin-bottom:8px">🌿 Multiple stories, students choose their path</p>
+
+      <input type="hidden" id="f-type" value="branching"/>
+
+      <label class="field-label">Title *</label>
+      <input id="f-title" class="field-input" value="${escapeHTML(d.title||'')}" placeholder="e.g. Parables of Jesus — Choose Your Story"/>
+
+      <label class="field-label">Subject Tag</label>
+      <input id="f-subject" class="field-input" value="${escapeHTML(d.subject||'')}" placeholder="e.g. Religious Studies"/>
+
+      <label class="field-label">Intro for Students (optional)</label>
+      <textarea id="f-intro" class="field-textarea" rows="3" placeholder="Brief intro shown to students before they pick a story…">${escapeHTML(d.intro||'')}</textarea>
+
+      <label class="field-label">Default AI Tutor Instructions</label>
+      <textarea id="f-instructions" class="field-textarea" rows="5" placeholder="Default coaching style. Each story or branch can override this individually.">${escapeHTML(d.instructions||'')}</textarea>
+      <p class="field-hint">Used unless a specific story or branch overrides it.</p>
+
+      <!-- ── STORIES ── -->
+      <div class="branch-section">
+        <div class="branch-section-header">
+          <h3>📚 Stories</h3>
+          <button class="btn btn-ghost" onclick="addStory()">+ Add Story</button>
+        </div>
+        <div id="stories-container">
+          ${stories.map((s,i)=>storyBlock(i,s)).join("")}
+        </div>
+        <div class="field-row mt-md">
+          <div>
+            <label class="field-label" style="margin-top:0">Students must complete</label>
+            <select id="f-required-stories" class="field-select">
+              ${[1,2,3,4,5,6,7,8].map(n=>`<option value="${n}" ${n==reqStories?'selected':''}>${n} stor${n===1?'y':'ies'}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── LEARN MORE BRANCHES ── -->
+      <div class="branch-section">
+        <div class="branch-section-header">
+          <h3>🔍 "Learn More" Branches</h3>
+          <button class="btn btn-ghost" onclick="addBranch()">+ Add Branch</button>
+        </div>
+        <p class="field-hint" style="margin-bottom:12px">After each story, students choose from these. Examples: biblical context, historical context, common misreadings.</p>
+        <div id="branches-container">
+          ${branches.map((b,i)=>branchBlock(i,b)).join("")}
+        </div>
+        <div class="field-row mt-md">
+          <div>
+            <label class="field-label" style="margin-top:0">Students must complete</label>
+            <select id="f-required-branches" class="field-select">
+              ${[0,1,2,3,4,5,6].map(n=>`<option value="${n}" ${n==reqBranches?'selected':''}>${n===0?'No branches required':`${n} branch${n>1?'es':''}`}</option>`).join("")}
+            </select>
+            <p class="field-hint">Per story they finish.</p>
+          </div>
+        </div>
+      </div>
+
+      <label class="field-label">Post to Google Classroom Classes</label>
+      ${renderClassCheckboxes(classes, d.classIds||[])}
+
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="renderTeacherHome()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveBranching('${id||""}')">${id ? "Save Changes" : "Publish"}</button>
+      </div>
+    </div>`;
+}
+
+function emptyStory(i)  { return { id:`s${Date.now()}_${i}`, title:"", imageUrl:"", passage:"", instructions:"", questions:[{text:"",maxRounds:5}] }; }
+function emptyBranch(i) { return { id:`b${Date.now()}_${i}`, title:"", description:"", passage:"", instructions:"", questions:[{text:"",maxRounds:5}] }; }
+
+function storyBlock(idx, s) {
+  return `<details class="story-block" id="story-${idx}" data-id="${s.id||`s${Date.now()}_${idx}`}" open>
+    <summary>
+      <span class="summary-content">📖 <span class="story-title-preview">Story ${idx+1}${s.title?": "+escapeHTML(s.title):""}</span></span>
+      <span class="summary-actions"><button class="btn-icon" onclick="event.stopPropagation();removeStory(${idx})" title="Remove">✕</button></span>
+    </summary>
+    <div style="margin-top:12px">
+      <label class="field-label" style="margin-top:8px">Story Title *</label>
+      <input class="field-input s-title" value="${escapeHTML(s.title||'')}" placeholder="e.g. The Prodigal Son" oninput="updateStoryTitle(${idx},this.value)"/>
+
+      <label class="field-label">Image URL (Google Drive share link, Wikipedia, etc.)</label>
+      <input class="field-input s-image" value="${escapeHTML(s.imageUrl||'')}" placeholder="https://drive.google.com/file/d/.../view"/>
+      <p class="field-hint">Paste any public image URL. For Google Drive: right-click image in Drive → Share → Anyone with link → copy URL.</p>
+
+      <label class="field-label">Passage *</label>
+      <textarea class="field-textarea s-passage" rows="6" placeholder="Paste the story or passage…">${escapeHTML(s.passage||'')}</textarea>
+
+      <label class="field-label">Questions</label>
+      <div class="s-questions">
+        ${(s.questions||[{text:"",maxRounds:5}]).map((q,qi)=>qRow("s",idx,qi,q.text,q.maxRounds)).join("")}
+      </div>
+      <button class="btn btn-ghost mt-sm" onclick="addQ('s',${idx})">+ Add Question</button>
+
+      <label class="field-label">AI Override (optional)</label>
+      <textarea class="field-textarea s-instructions" rows="3" placeholder="Leave blank to use default AI instructions">${escapeHTML(s.instructions||'')}</textarea>
+    </div>
+  </details>`;
+}
+
+function branchBlock(idx, b) {
+  return `<details class="learnmore-block" id="branch-${idx}" data-id="${b.id||`b${Date.now()}_${idx}`}" open>
+    <summary>
+      <span class="summary-content">🔍 <span class="branch-title-preview">Branch ${idx+1}${b.title?": "+escapeHTML(b.title):""}</span></span>
+      <span class="summary-actions"><button class="btn-icon" onclick="event.stopPropagation();removeBranch(${idx})" title="Remove">✕</button></span>
+    </summary>
+    <div style="margin-top:12px">
+      <label class="field-label" style="margin-top:8px">Title *</label>
+      <input class="field-input b-title" value="${escapeHTML(b.title||'')}" placeholder="e.g. Cultural Context: Honor and Shame" oninput="updateBranchTitle(${idx},this.value)"/>
+
+      <label class="field-label">Short Description</label>
+      <input class="field-input b-desc" value="${escapeHTML(b.description||'')}" placeholder="One line shown to students on the branch picker"/>
+
+      <label class="field-label">Passage / Reading *</label>
+      <textarea class="field-textarea b-passage" rows="6" placeholder="The text they'll read for this branch…">${escapeHTML(b.passage||'')}</textarea>
+
+      <label class="field-label">Questions</label>
+      <div class="b-questions">
+        ${(b.questions||[{text:"",maxRounds:5}]).map((q,qi)=>qRow("b",idx,qi,q.text,q.maxRounds)).join("")}
+      </div>
+      <button class="btn btn-ghost mt-sm" onclick="addQ('b',${idx})">+ Add Question</button>
+
+      <label class="field-label">AI Override (optional)</label>
+      <textarea class="field-textarea b-instructions" rows="3" placeholder="Leave blank to use default AI instructions">${escapeHTML(b.instructions||'')}</textarea>
+    </div>
+  </details>`;
+}
+
+function qRow(prefix, parentIdx, qi, text="", rounds=5) {
+  const opts = [1,2,3,4,5].map(n=>`<option value="${n}" ${rounds==n?'selected':''}>${n} round${n>1?'s':''}</option>`).join("");
+  return `<div class="question-row q-row-${prefix}-${parentIdx}-${qi}">
+    <span class="q-num">${qi+1}.</span>
+    <input class="q-input qx" value="${escapeHTML(text)}" placeholder="Question ${qi+1}…"/>
+    <select class="q-rounds qrx">${opts}</select>
+    <button class="btn-icon" onclick="removeQ('${prefix}',${parentIdx},${qi},this)" title="Remove">✕</button>
+  </div>`;
+}
+
+window.addStory = () => {
+  const c = $("stories-container");
+  const i = c.children.length;
+  c.insertAdjacentHTML("beforeend", storyBlock(i, emptyStory(i)));
+};
+window.removeStory = (i) => {
+  if (!confirm("Remove this story?")) return;
+  const el = $(`story-${i}`); if (el) el.remove();
+};
+window.updateStoryTitle = (i, val) => {
+  const block = $(`story-${i}`); if (!block) return;
+  const preview = block.querySelector(".story-title-preview");
+  if (preview) preview.textContent = `Story ${i+1}${val?": "+val:""}`;
+};
+
+window.addBranch = () => {
+  const c = $("branches-container");
+  const i = c.children.length;
+  c.insertAdjacentHTML("beforeend", branchBlock(i, emptyBranch(i)));
+};
+window.removeBranch = (i) => {
+  if (!confirm("Remove this branch?")) return;
+  const el = $(`branch-${i}`); if (el) el.remove();
+};
+window.updateBranchTitle = (i, val) => {
+  const block = $(`branch-${i}`); if (!block) return;
+  const preview = block.querySelector(".branch-title-preview");
+  if (preview) preview.textContent = `Branch ${i+1}${val?": "+val:""}`;
+};
+
+window.addQ = (prefix, parentIdx) => {
+  const parentSel = prefix === "s" ? `#story-${parentIdx} .s-questions` : `#branch-${parentIdx} .b-questions`;
+  const cont = document.querySelector(parentSel);
+  if (!cont) return;
+  cont.insertAdjacentHTML("beforeend", qRow(prefix, parentIdx, cont.children.length));
+};
+window.removeQ = (prefix, parentIdx, qi, btn) => {
+  btn.closest(".question-row").remove();
+};
+
+window.saveBranching = async (existingId) => {
+  const title = $("f-title").value.trim();
+  if (!title) { toast("Title required.", true); return; }
+
+  // Read all stories
+  const stories = [];
+  document.querySelectorAll(".story-block").forEach((blk) => {
+    const sTitle   = blk.querySelector(".s-title").value.trim();
+    const sImage   = blk.querySelector(".s-image").value.trim();
+    const sPass    = blk.querySelector(".s-passage").value.trim();
+    const sInstr   = blk.querySelector(".s-instructions").value.trim();
+    if (!sTitle && !sPass) return; // skip empty
+    const qs = [];
+    blk.querySelectorAll(".s-questions .question-row").forEach(row => {
+      const t = row.querySelector(".qx").value.trim();
+      if (t) qs.push({ text:t, maxRounds:parseInt(row.querySelector(".qrx").value,10)||5 });
+    });
+    stories.push({
+      id: blk.dataset.id || `s${Date.now()}_${stories.length}`,
+      title:sTitle, imageUrl:sImage, passage:sPass, instructions:sInstr, questions:qs
+    });
+  });
+
+  // Read all branches
+  const branches = [];
+  document.querySelectorAll(".learnmore-block").forEach((blk) => {
+    const bTitle = blk.querySelector(".b-title").value.trim();
+    const bDesc  = blk.querySelector(".b-desc").value.trim();
+    const bPass  = blk.querySelector(".b-passage").value.trim();
+    const bInstr = blk.querySelector(".b-instructions").value.trim();
+    if (!bTitle && !bPass) return;
+    const qs = [];
+    blk.querySelectorAll(".b-questions .question-row").forEach(row => {
+      const t = row.querySelector(".qx").value.trim();
+      if (t) qs.push({ text:t, maxRounds:parseInt(row.querySelector(".qrx").value,10)||5 });
+    });
+    branches.push({
+      id: blk.dataset.id || `b${Date.now()}_${branches.length}`,
+      title:bTitle, description:bDesc, passage:bPass, instructions:bInstr, questions:qs
+    });
+  });
+
+  if (!stories.length) { toast("Add at least one story.", true); return; }
+
+  const reqStories  = parseInt($("f-required-stories").value,10) || 1;
+  const reqBranches = parseInt($("f-required-branches").value,10) || 0;
+
+  if (reqStories > stories.length) { toast(`You require ${reqStories} stories but only have ${stories.length}.`, true); return; }
+  if (reqBranches > branches.length) { toast(`You require ${reqBranches} branches but only have ${branches.length}.`, true); return; }
+
+  const { classIds, classNames } = readClassChecks();
+  const payload = {
+    type:"branching", title,
+    subject:        $("f-subject").value.trim(),
+    intro:          $("f-intro").value.trim(),
+    instructions:   $("f-instructions").value.trim(),
+    stories, branches,
+    requiredStories:  reqStories,
+    requiredBranches: reqBranches,
+    classIds, classNames,
+    teacherId:   user.uid,
+    teacherName: user.displayName,
+    updatedAt:   serverTimestamp()
+  };
+  await commonSaveAndPost(existingId, payload);
+};
+
+/* ────────────────────────────────────────────
+   Shared save/post + class checkboxes
+──────────────────────────────────────────── */
+function renderClassCheckboxes(classes, selected) {
+  return `<div class="class-checkboxes" id="class-checks">
+    ${classes.length === 0
+      ? `<p style="color:var(--ink3);font-size:.85rem">⚠️ No classes found — make sure your Apps Script URL is set and you've granted access.</p>`
+      : classes.map(c => `
+        <label class="class-checkbox">
+          <input type="checkbox" value="${c.id}" data-name="${escapeHTML(c.name)}" ${(selected||[]).includes(c.id)?"checked":""}/>
+          <label>${escapeHTML(c.name)} <span style="color:var(--ink3);font-size:.8rem">(${escapeHTML(c.section||"")})</span></label>
+        </label>`).join("")}
+  </div>`;
+}
+function readClassChecks() {
+  const checks = document.querySelectorAll('#class-checks input[type=checkbox]:checked');
+  return {
+    classIds:   Array.from(checks).map(c=>c.value),
+    classNames: Array.from(checks).map(c=>c.dataset.name)
+  };
+}
+
+async function commonSaveAndPost(existingId, payload) {
   let docId = existingId;
   if (existingId) {
     await setDoc(doc(db,"assignments",existingId), payload, {merge:true});
@@ -574,27 +918,38 @@ window.saveAssignment = async (existingId) => {
     docId = ref.id;
   }
 
-  // Post to Google Classroom via Apps Script
-  if (classIds.length && APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("REPLACE")) {
+  // Post to Google Classroom
+  if (payload.classIds.length && APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("REPLACE")) {
+    const assignmentUrl = window.location.href.split("?")[0] + `?a=${docId}`;
     try {
       await fetch(APPS_SCRIPT_URL, {
-        method: "POST",
-        headers: {"Content-Type":"text/plain;charset=utf-8"},
+        method:"POST",
+        headers:{"Content-Type":"text/plain;charset=utf-8"},
         body: JSON.stringify({
-          action: "postAssignment",
-          token: gToken,
-          title, description: `Complete this AI-powered reading assignment: ${assignmentUrl}?a=${docId}`,
-          url: `${assignmentUrl}?a=${docId}`,
-          classIds
+          action:"postAssignment",
+          token:gToken,
+          title: payload.title,
+          description:`Complete this AI-powered reading assignment: ${assignmentUrl}`,
+          url: assignmentUrl,
+          classIds: payload.classIds
         })
       });
-      toast("Assignment published to Google Classroom ✓");
-    } catch(e) { toast("Saved, but Classroom post failed: "+e.message, true); }
+      toast("Published to Google Classroom ✓");
+    } catch(e) { toast("Saved, but Classroom post failed.", true); }
   } else {
     toast("Assignment saved ✓");
   }
   renderTeacherHome();
-};
+}
+
+async function fetchTeacherClasses() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith("REPLACE")) return [];
+  try {
+    const r = await fetch(`${APPS_SCRIPT_URL}?action=getClasses&token=${encodeURIComponent(gToken||"")}`);
+    const j = await r.json();
+    return j.classes || [];
+  } catch(e) { return []; }
+}
 
 window.deleteAssignment = async id => {
   if (!confirm("Delete this assignment permanently?")) return;
@@ -607,24 +962,13 @@ window.renderEditAssignment = async id => {
   const snap = await getDoc(doc(db,"assignments",id));
   renderCreateAssignment(id, snap.data());
 };
+
 window.duplicateAssignment = async id => {
   const snap = await getDoc(doc(db,"assignments",id));
   if (!snap.exists()) { toast("Assignment not found.", true); return; }
   const data = snap.data();
-
-  // Build a fresh draft — copy content but clear class selections and rename
-  const draft = {
-    title:        (data.title || "") + " (Copy)",
-    subject:      data.subject || "",
-    passage:      data.passage || "",
-    questions:    data.questions || [],
-    instructions: data.instructions || "",
-    classIds:     [],   // start unselected so teacher chooses fresh
-    classNames:   []
-  };
-
-  // Open the create form with the draft pre-filled, but no existing ID
-  // (passing no id means "Publish" creates a new doc rather than overwriting)
+  const draft = { ...data, title:(data.title||"")+" (Copy)", classIds:[], classNames:[] };
+  delete draft.createdAt; delete draft.updatedAt;
   renderCreateAssignment("", draft);
   toast("Duplicated! Edit and choose classes, then publish.");
 };
@@ -636,7 +980,7 @@ window.renderResponses = async (assignmentId, title) => {
   mc().innerHTML = `
     <button class="back-btn" onclick="renderTeacherHome()">← Back</button>
     <div class="page-header">
-      <div><h1 class="page-title">Responses</h1><p class="page-sub">${title||""}</p></div>
+      <div><h1 class="page-title">Responses</h1><p class="page-sub">${escapeHTML(title||"")}</p></div>
       <button class="btn btn-ghost" onclick="exportCSV('${assignmentId}')">⬇ Export CSV</button>
     </div>
     <div id="resp-container"><div class="loading-spinner"></div></div>`;
@@ -647,22 +991,19 @@ window.renderResponses = async (assignmentId, title) => {
 
   let rows = "";
   snp.forEach(d => {
-    const r  = d.data();
+    const r = d.data();
     const dt = r.submittedAt?.toDate?.()?.toLocaleDateString() || "—";
     rows += `<tr>
-      <td>${r.studentName}</td>
-      <td>${r.studentEmail}</td>
+      <td>${escapeHTML(r.studentName||'')}</td>
+      <td>${escapeHTML(r.studentEmail||'')}</td>
       <td>${dt}</td>
-      <td>${(r.session||[]).length} / ${r.totalQuestions||"?"}</td>
-      <td><button class="expand-btn" onclick="showDetailModal('${d.id}')">View Detail →</button></td>
+      <td>${(r.session||[]).length} exchange${(r.session||[]).length===1?'':'s'}</td>
+      <td><button class="expand-btn" onclick="showDetailModal('${d.id}')">View →</button></td>
     </tr>`;
   });
-
-  cont.innerHTML = `
-    <table class="responses-table">
-      <thead><tr><th>Student</th><th>Email</th><th>Date</th><th>Progress</th><th></th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+  cont.innerHTML = `<table class="responses-table">
+    <thead><tr><th>Student</th><th>Email</th><th>Date</th><th>Activity</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
 };
 
 window.renderAllResponses = async () => {
@@ -673,27 +1014,25 @@ window.renderAllResponses = async () => {
     </div>
     <div id="resp-container"><div class="loading-spinner"></div></div>`;
 
-  const snp  = await getDocs(query(collection(db,"responses"), where("teacherId","==",user.uid)));
+  const snp = await getDocs(query(collection(db,"responses"), where("teacherId","==",user.uid)));
   const cont = $("resp-container");
   if (snp.empty) { cont.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No responses yet.</p></div>`; return; }
 
   let rows = "";
   snp.forEach(d => {
-    const r  = d.data();
+    const r = d.data();
     const dt = r.submittedAt?.toDate?.()?.toLocaleDateString() || "—";
     rows += `<tr>
-      <td>${r.studentName}</td>
-      <td>${r.assignmentTitle||"—"}</td>
+      <td>${escapeHTML(r.studentName||'')}</td>
+      <td>${escapeHTML(r.assignmentTitle||"—")}</td>
       <td>${dt}</td>
-      <td>${(r.session||[]).length}/${r.totalQuestions||"?"}</td>
+      <td>${(r.session||[]).length} exchanges</td>
       <td><button class="expand-btn" onclick="showDetailModal('${d.id}')">View →</button></td>
     </tr>`;
   });
-  cont.innerHTML = `
-    <table class="responses-table">
-      <thead><tr><th>Student</th><th>Assignment</th><th>Date</th><th>Progress</th><th></th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+  cont.innerHTML = `<table class="responses-table">
+    <thead><tr><th>Student</th><th>Assignment</th><th>Date</th><th>Activity</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
 };
 
 window.showDetailModal = async (responseId) => {
@@ -701,16 +1040,16 @@ window.showDetailModal = async (responseId) => {
   const r = snap.data();
   const html = (r.session||[]).map((s,i) => `
     <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)">
-      <p style="font-size:.78rem;font-weight:700;color:var(--ink3);text-transform:uppercase;margin-bottom:4px">Q${i+1}</p>
-      <p style="font-family:'Lora',serif;margin-bottom:8px">${s.question}</p>
+      <p style="font-size:.78rem;font-weight:700;color:var(--ink3);text-transform:uppercase;margin-bottom:4px">${escapeHTML(s.context||"Q"+(i+1))}</p>
+      <p style="font-family:'Lora',serif;margin-bottom:8px">${escapeHTML(s.question)}</p>
       <p style="font-size:.85rem;color:var(--ink2);margin-bottom:4px">Student:</p>
-      <p style="margin-bottom:8px;font-size:.92rem">${s.answer}</p>
-      <p style="font-size:.85rem;color:var(--accent);font-style:italic;border-left:2px solid var(--accent2);padding-left:10px">${s.feedback}</p>
+      <p style="margin-bottom:8px;font-size:.92rem">${escapeHTML(s.answer)}</p>
+      <p style="font-size:.85rem;color:var(--accent);font-style:italic;border-left:2px solid var(--accent2);padding-left:10px">${escapeHTML(s.feedback)}</p>
     </div>`).join("");
   document.body.insertAdjacentHTML("beforeend", `
     <div class="modal-overlay" id="detail-modal" onclick="if(event.target.id==='detail-modal')closeModal()">
       <div class="modal">
-        <h2>${r.studentName} — ${r.assignmentTitle||""}</h2>
+        <h2>${escapeHTML(r.studentName||"")} — ${escapeHTML(r.assignmentTitle||"")}</h2>
         <p style="color:var(--ink3);font-size:.85rem;margin-bottom:20px">${r.submittedAt?.toDate?.()?.toLocaleString()||""}</p>
         ${html}
         <div class="modal-actions">
@@ -723,13 +1062,13 @@ window.closeModal = () => { const m = $("detail-modal"); if(m) m.remove(); };
 
 window.exportCSV = async (assignmentId) => {
   const snp = await getDocs(query(collection(db,"responses"), where("assignmentId","==",assignmentId)));
-  let csv = "Student,Email,Date,Question,Answer,AI Feedback\n";
+  let csv = "Student,Email,Date,Context,Question,Answer,AI Feedback\n";
   snp.forEach(d => {
-    const r  = d.data();
+    const r = d.data();
     const dt = r.submittedAt?.toDate?.()?.toLocaleDateString()||"";
     (r.session||[]).forEach(s => {
       const esc = v => `"${(v||"").replace(/"/g,'""')}"`;
-      csv += `${esc(r.studentName)},${esc(r.studentEmail)},${esc(dt)},${esc(s.question)},${esc(s.answer)},${esc(s.feedback)}\n`;
+      csv += `${esc(r.studentName)},${esc(r.studentEmail)},${esc(dt)},${esc(s.context||"")},${esc(s.question)},${esc(s.answer)},${esc(s.feedback)}\n`;
     });
   });
   const a = document.createElement("a");
@@ -744,36 +1083,34 @@ window.exportCSV = async (assignmentId) => {
 async function renderStudentHome() {
   mc().innerHTML = `
     <div class="student-home">
-      <h1 class="page-title">Welcome, ${user.displayName.split(" ")[0]} 👋</h1>
+      <h1 class="page-title">Welcome, ${escapeHTML(user.displayName.split(" ")[0])} 👋</h1>
       <p class="welcome-sub">Your assignments are listed below. Click one to begin.</p>
       <div id="student-assignments"><div class="loading-spinner"></div></div>
     </div>`;
 
-  // Check if opened via direct assignment link
   const params = new URLSearchParams(window.location.search);
   const directId = params.get("a");
-  if (directId) { renderAssignment(directId); return; }
+  if (directId) { startAssignment(directId); return; }
 
-  // Load assignments available to this student (via shared classroom IDs or all public)
   const snp = await getDocs(query(collection(db,"assignments")));
   const list = $("student-assignments");
-  if (snp.empty) { list.innerHTML=`<div class="empty-state"><div class="empty-icon">📚</div><p>No assignments yet.</p></div>`; return; }
+  if (snp.empty) { list.innerHTML = `<div class="empty-state"><div class="empty-icon">📚</div><p>No assignments yet.</p></div>`; return; }
 
-  // Check which ones student has completed
   const doneSnap = await getDocs(query(collection(db,"responses"), where("studentId","==",user.uid)));
-  const doneIds  = new Set();
+  const doneIds = new Set();
   doneSnap.forEach(d => doneIds.add(d.data().assignmentId));
 
   list.innerHTML = "";
   snp.forEach(d => {
-    const a    = d.data();
+    const a = d.data();
     const done = doneIds.has(d.id);
+    const icon = a.type === "branching" ? "🌿" : "📖";
     list.innerHTML += `
-      <div class="assignment-student-card" style="cursor:pointer" onclick="renderAssignment('${d.id}')">
-        <div class="asc-icon">${done ? "✅" : "📖"}</div>
+      <div class="assignment-student-card" onclick="startAssignment('${d.id}')">
+        <div class="asc-icon">${done ? "✅" : icon}</div>
         <div class="asc-body">
-          <p class="asc-title">${a.title}</p>
-          <p class="asc-meta">${a.subject||"General"} · ${(a.questions||[]).length} questions · ${a.teacherName||""}</p>
+          <p class="asc-title">${escapeHTML(a.title)}</p>
+          <p class="asc-meta">${escapeHTML(a.subject||"General")} · ${escapeHTML(a.teacherName||"")}</p>
         </div>
         <span class="status-badge ${done?"done":"todo"}">${done?"Done":"To Do"}</span>
       </div>`;
@@ -781,173 +1118,358 @@ async function renderStudentHome() {
 }
 
 /* ═══════════════════════════════════════════════
-   STUDENT — ASSIGNMENT FLOW
+   STUDENT — START ASSIGNMENT (router)
 ═══════════════════════════════════════════════ */
-window.renderAssignment = async (assignmentId) => {
+window.startAssignment = async (assignmentId) => {
   const snap = await getDoc(doc(db,"assignments",assignmentId));
   if (!snap.exists()) { toast("Assignment not found.", true); return; }
   curAssignment = { id: assignmentId, ...snap.data() };
-  session   = [];
-  qIndex    = 0;
-  renderQuestion();
+  session = [];
+  qIndex = 0;
+  followUpRound = 0;
+
+  if (curAssignment.type === "branching") {
+    journey = {
+      storiesCompleted:  [],
+      branchesCompleted: [], // global list (across all stories)
+      branchesCompletedThisStory: 0,
+      currentStoryId:    null,
+      currentBranchId:   null,
+      phase:             "story-pick"
+    };
+    renderStoryPicker();
+  } else {
+    renderLinearQuestion();
+  }
 };
 
-function renderQuestion() {
-  const a        = curAssignment;
-  followUpRound = 0;  // reset rounds counter
-  const total    = a.questions.length;
+/* ═══════════════════════════════════════════════
+   STUDENT — LINEAR FLOW
+═══════════════════════════════════════════════ */
+function renderLinearQuestion() {
+  const a = curAssignment;
+  const total = a.questions.length;
   const progress = Math.round((qIndex / total) * 100);
+  followUpRound = 0;
+  const q = typeof a.questions[qIndex] === "string"
+    ? { text:a.questions[qIndex], maxRounds:5 }
+    : a.questions[qIndex];
+  MAX_ROUNDS_FOR_Q = q.maxRounds || 5;
 
   mc().innerHTML = `
     <div class="assignment-view">
       <button class="back-btn" onclick="renderStudentHome()">← Back</button>
-      <h2 style="font-family:'Lora',serif;margin-bottom:4px">${a.title}</h2>
+      <h2 style="font-family:'Lora',serif;margin-bottom:4px">${escapeHTML(a.title)}</h2>
       <p style="color:var(--ink3);font-size:.85rem;margin-bottom:16px">Question ${qIndex+1} of ${total}</p>
 
       <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${progress}%"></div></div>
 
-      <!-- Past Q&As -->
-      <div id="history-container"></div>
-
-      <!-- Passage -->
       <details ${qIndex===0?"open":""}>
         <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--ink2);margin-bottom:8px;user-select:none">
           📄 Reading Passage ${qIndex>0?"(click to expand)":""}
         </summary>
-        <div class="passage-box">${a.passage.replace(/\n/g,"<br/>")}</div>
+        <div class="passage-box">${escapeHTML(a.passage).replace(/\n/g,"<br/>")}</div>
       </details>
 
-      <!-- Current question -->
       <div class="question-box" style="margin-top:16px">
         <p class="question-label">Question ${qIndex+1}</p>
-        <p class="question-text">${a.questions[qIndex]}</p>
+        <p class="question-text">${escapeHTML(q.text)}</p>
       </div>
-
-      <textarea id="student-answer" class="answer-area" placeholder="Type your answer here…"></textarea>
 
       <div id="ai-feedback-area"></div>
 
+      <textarea id="student-answer" class="answer-area" placeholder="Type your answer here…"></textarea>
+
       <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap" id="action-row">
-        <button class="btn btn-primary" id="submit-btn" onclick="submitAnswer()">Submit Answer</button>
+        <button class="btn btn-primary" id="submit-btn" onclick="handleSubmit('first')">Submit Answer</button>
       </div>
     </div>`;
-
-  // Render past exchanges
-  if (session.length > 0) {
-    const hc = $("history-container");
-    session.slice(0,-1).forEach((s,i) => {
-      hc.innerHTML += `
-        <div class="history-item">
-          <p class="history-q">Q${i+1}: ${s.question}</p>
-          <p class="history-a">Your answer: ${s.answer}</p>
-          <p class="history-ai">${s.feedback}</p>
-        </div>`;
-    });
-  }
 }
 
-let followUpRound = 0;  // tracks rounds within current question
-const MAX_ROUNDS = 5;
+window.nextLinearQuestion = () => {
+  qIndex++;
+  followUpRound = 0;
+  if (qIndex >= curAssignment.questions.length) completeAssignment();
+  else renderLinearQuestion();
+};
 
-window.submitAnswer = async () => {
-  const answer = $("student-answer").value.trim();
-  if (!answer) { toast("Please write an answer first.", true); return; }
+/* ═══════════════════════════════════════════════
+   STUDENT — BRANCHING FLOW
+═══════════════════════════════════════════════ */
+function renderStoryPicker() {
+  journey.phase = "story-pick";
+  const a = curAssignment;
+  const completed = journey.storiesCompleted.length;
+  const required = a.requiredStories || 1;
+  const remaining = required - completed;
 
-  $("submit-btn").disabled = true;
-  $("student-answer").disabled = true;
-
-  const fbArea = $("ai-feedback-area");
-  fbArea.insertAdjacentHTML("beforeend",
-    `<div class="ai-response" id="thinking"><div class="ai-label">Tutor</div>
-     <div class="typing-dots"><span></span><span></span><span></span></div></div>`);
-
-  // Get AI feedback
-  const rawFeedback = await getAIFeedback(answer);
-
-  // Parse the [CONTINUE] / [ADVANCE] signal
-  let signal = "CONTINUE";
-  let cleanFeedback = rawFeedback;
-  if (rawFeedback.includes("[ADVANCE]")) {
-    signal = "ADVANCE";
-    cleanFeedback = rawFeedback.replace(/\[ADVANCE\]/g, "").trim();
-  } else if (rawFeedback.includes("[CONTINUE]")) {
-    cleanFeedback = rawFeedback.replace(/\[CONTINUE\]/g, "").trim();
+  let progressMsg = "";
+  if (completed === 0) {
+    progressMsg = `Choose one of ${a.stories.length} stories to begin. <strong>Complete ${required} story${required>1?'ies':''}</strong> to finish this assignment.`;
+  } else if (remaining > 0) {
+    progressMsg = `Great work! <strong>${completed} of ${required}</strong> stories complete. Choose another to continue.`;
+  } else {
+    progressMsg = `You've completed all required stories! 🎉`;
   }
 
-  // Replace thinking dots with actual feedback
-  $("thinking").remove();
-  fbArea.insertAdjacentHTML("beforeend",
-    `<div class="exchange-block">
-       <p class="student-prior-answer"><strong>Your answer:</strong> ${answer}</p>
-       <div class="ai-response"><div class="ai-label">Tutor</div><p>${cleanFeedback}</p></div>
-     </div>`);
+  const cardsHTML = a.stories.map(s => {
+    const done = journey.storiesCompleted.includes(s.id);
+    const img  = s.imageUrl ? normaliseImageURL(s.imageUrl) : "";
+    return `
+      <div class="story-card ${done?'completed':''}" onclick="${done?'':`pickStory('${s.id}')`}">
+        <div class="story-img-wrap" style="position:relative">
+          ${img
+            ? `<img src="${img}" alt="${escapeHTML(s.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><div class="story-img-placeholder" style="display:none">📖</div>`
+            : `<div class="story-img-placeholder">📖</div>`}
+          ${done ? `<span class="story-status-badge">✓ Done</span>` : ""}
+        </div>
+        <div class="story-card-body">
+          <p class="story-card-title">${escapeHTML(s.title)}</p>
+          <p class="story-card-meta">${(s.questions||[]).length} question${(s.questions||[]).length===1?'':'s'}</p>
+        </div>
+      </div>`;
+  }).join("");
 
-  // Save this exchange
-  session.push({ question: curAssignment.questions[qIndex], answer, feedback: cleanFeedback });
-  followUpRound++;
+  mc().innerHTML = `
+    <div class="assignment-view">
+      <button class="back-btn" onclick="renderStudentHome()">← Back</button>
+      <h2 style="font-family:'Lora',serif;margin-bottom:4px">${escapeHTML(a.title)}</h2>
+      ${a.intro ? `<p style="color:var(--ink2);margin-bottom:20px;line-height:1.6">${escapeHTML(a.intro)}</p>` : ""}
+      <div class="journey-progress">${progressMsg}</div>
 
-  // Decide what comes next
-  const total = curAssignment.questions.length;
-  const ar = $("action-row");
-  const isLastQuestion = (qIndex >= total - 1);
+      ${remaining <= 0
+        ? `<div style="text-align:center;margin:40px 0">
+             <button class="btn btn-primary" onclick="completeAssignment()">Finish Assignment ✓</button>
+           </div>`
+        : ""}
 
-  // Force advance if we've hit the safety cap
-  const forceAdvance = followUpRound >= MAX_ROUNDS;
+      <h3 style="margin-bottom:14px;font-family:'Lora',serif;font-size:1.15rem">${remaining<=0?"Stories":"Choose Your Story"}</h3>
+      <div class="story-grid">${cardsHTML}</div>
+    </div>`;
+}
 
-  if (signal === "ADVANCE" || forceAdvance) {
-    // Move to next question (or complete)
-    if (isLastQuestion) {
-      ar.innerHTML = `<button class="btn btn-primary" onclick="completeAssignment()">Complete Assignment ✓</button>`;
+window.pickStory = (storyId) => {
+  const story = curAssignment.stories.find(s => s.id === storyId);
+  if (!story) return;
+  journey.currentStoryId = storyId;
+  journey.phase = "story-questions";
+  journey.branchesCompletedThisStory = 0;
+  qIndex = 0;
+  followUpRound = 0;
+  renderStoryQuestion();
+};
+
+function renderStoryQuestion() {
+  const story = curAssignment.stories.find(s => s.id === journey.currentStoryId);
+  if (!story) return;
+  const total = story.questions.length;
+
+  if (qIndex >= total) {
+    // Story finished — check whether branches should follow
+    const requiredBr = curAssignment.requiredBranches || 0;
+    const availableBr = (curAssignment.branches||[]).length;
+    if (requiredBr > 0 && availableBr > 0) {
+      renderBranchPicker();
     } else {
-      ar.innerHTML = `<button class="btn btn-primary" onclick="nextQuestion()">Next Question →</button>`;
+      finishStory();
     }
-    if (forceAdvance && signal !== "ADVANCE") {
-      ar.insertAdjacentHTML("afterbegin",
-        `<p style="color:var(--ink3);font-size:.85rem;margin-bottom:8px;width:100%">
-          You've explored this question well — let's move on.</p>`);
-    }
-} else {
-    // Stay on this question — but move the answer box DOWN under the AI's response
-    // Hide the original input area
-    $("student-answer").style.display = "none";
-    $("submit-btn").style.display = "none";
+    return;
+  }
 
-    // Add a fresh answer box right under the latest AI response
-    fbArea.insertAdjacentHTML("beforeend", `
-      <div class="followup-input-block">
-        <p class="followup-prompt">Develop your answer further based on the tutor's feedback:</p>
-        <textarea id="followup-answer-${followUpRound}" class="answer-area" placeholder="Type your next response here…" autofocus></textarea>
-        <button class="btn btn-primary mt-sm" onclick="submitFollowUp(${followUpRound})">
-          Submit (round ${followUpRound + 1} of ${MAX_ROUNDS})
-        </button>
-      </div>`);
+  followUpRound = 0;
+  const q = story.questions[qIndex];
+  MAX_ROUNDS_FOR_Q = q.maxRounds || 5;
+  const progress = Math.round((qIndex / total) * 100);
+  const img = story.imageUrl ? normaliseImageURL(story.imageUrl) : "";
 
-    // Auto-focus the new box and scroll to it
-    setTimeout(() => {
-      const newBox = $(`followup-answer-${followUpRound}`);
-      if (newBox) { newBox.focus(); newBox.scrollIntoView({behavior:"smooth", block:"center"}); }
-    }, 100);
+  mc().innerHTML = `
+    <div class="assignment-view">
+      <button class="back-btn" onclick="renderStoryPicker()">← Back to Stories</button>
+      <h2 style="font-family:'Lora',serif;margin-bottom:4px">${escapeHTML(story.title)}</h2>
+      <p style="color:var(--ink3);font-size:.85rem;margin-bottom:16px">Question ${qIndex+1} of ${total}</p>
+
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${progress}%"></div></div>
+
+      ${img && qIndex===0 ? `<img src="${img}" alt="" style="width:100%;max-height:280px;object-fit:cover;border-radius:var(--radius);margin-bottom:16px;border:1px solid var(--border)"/>` : ""}
+
+      <details ${qIndex===0?"open":""}>
+        <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--ink2);margin-bottom:8px;user-select:none">
+          📄 Story Passage ${qIndex>0?"(click to expand)":""}
+        </summary>
+        <div class="passage-box">${escapeHTML(story.passage).replace(/\n/g,"<br/>")}</div>
+      </details>
+
+      <div class="question-box" style="margin-top:16px">
+        <p class="question-label">Question ${qIndex+1}</p>
+        <p class="question-text">${escapeHTML(q.text)}</p>
+      </div>
+
+      <div id="ai-feedback-area"></div>
+
+      <textarea id="student-answer" class="answer-area" placeholder="Type your answer here…"></textarea>
+
+      <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap" id="action-row">
+        <button class="btn btn-primary" id="submit-btn" onclick="handleSubmit('first')">Submit Answer</button>
+      </div>
+    </div>`;
+}
+
+window.nextStoryQuestion = () => {
+  qIndex++;
+  followUpRound = 0;
+  renderStoryQuestion();
+};
+
+function renderBranchPicker() {
+  journey.phase = "branch-pick";
+  const a = curAssignment;
+  const requiredBr = a.requiredBranches || 0;
+  const doneCount  = journey.branchesCompletedThisStory;
+  const remaining  = requiredBr - doneCount;
+
+  let msg = "";
+  if (doneCount === 0) {
+    msg = `Now choose what you'd like to <strong>learn more about</strong>. Complete <strong>${requiredBr}</strong> to continue.`;
+  } else if (remaining > 0) {
+    msg = `Nice! <strong>${doneCount} of ${requiredBr}</strong> done. Pick another.`;
+  } else {
+    msg = `All branches complete for this story! 🎉`;
+  }
+
+  // Track which branches the student has done globally so they don't re-do
+  const branchesDoneSet = new Set(journey.branchesCompleted);
+
+  const branchHTML = a.branches.map(b => {
+    const done = branchesDoneSet.has(b.id);
+    return `
+      <div class="branch-picker-card ${done?'completed':''}" onclick="${done?'':`pickBranch('${b.id}')`}">
+        <div class="branch-icon">🔍</div>
+        <div class="branch-body">
+          <p class="branch-title">${escapeHTML(b.title)}${done?' ✓':''}</p>
+          ${b.description ? `<p class="branch-desc">${escapeHTML(b.description)}</p>` : ""}
+        </div>
+      </div>`;
+  }).join("");
+
+  mc().innerHTML = `
+    <div class="assignment-view">
+      <button class="back-btn" onclick="renderStoryPicker()">← Back to Stories</button>
+      <h2 style="font-family:'Lora',serif;margin-bottom:4px">Learn More</h2>
+      <div class="journey-progress">${msg}</div>
+      ${remaining <= 0
+        ? `<div style="text-align:center;margin:24px 0">
+             <button class="btn btn-primary" onclick="finishStory()">Finish This Story →</button>
+           </div>`
+        : ""}
+      ${branchHTML}
+    </div>`;
+}
+
+window.pickBranch = (branchId) => {
+  const branch = curAssignment.branches.find(b => b.id === branchId);
+  if (!branch) return;
+  journey.currentBranchId = branchId;
+  journey.phase = "branch-questions";
+  qIndex = 0;
+  followUpRound = 0;
+  renderBranchQuestion();
+};
+
+function renderBranchQuestion() {
+  const branch = curAssignment.branches.find(b => b.id === journey.currentBranchId);
+  if (!branch) return;
+  const total = branch.questions.length;
+
+  if (qIndex >= total) {
+    // Branch done
+    if (!journey.branchesCompleted.includes(branch.id)) journey.branchesCompleted.push(branch.id);
+    journey.branchesCompletedThisStory++;
+    renderBranchPicker();
+    return;
+  }
+
+  followUpRound = 0;
+  const q = branch.questions[qIndex];
+  MAX_ROUNDS_FOR_Q = q.maxRounds || 5;
+  const progress = Math.round((qIndex / total) * 100);
+
+  mc().innerHTML = `
+    <div class="assignment-view">
+      <button class="back-btn" onclick="renderBranchPicker()">← Back</button>
+      <h2 style="font-family:'Lora',serif;margin-bottom:4px">${escapeHTML(branch.title)}</h2>
+      <p style="color:var(--ink3);font-size:.85rem;margin-bottom:16px">Question ${qIndex+1} of ${total}</p>
+
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${progress}%"></div></div>
+
+      <details ${qIndex===0?"open":""}>
+        <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--ink2);margin-bottom:8px;user-select:none">
+          📄 Reading ${qIndex>0?"(click to expand)":""}
+        </summary>
+        <div class="passage-box">${escapeHTML(branch.passage).replace(/\n/g,"<br/>")}</div>
+      </details>
+
+      <div class="question-box" style="margin-top:16px">
+        <p class="question-label">Question ${qIndex+1}</p>
+        <p class="question-text">${escapeHTML(q.text)}</p>
+      </div>
+
+      <div id="ai-feedback-area"></div>
+
+      <textarea id="student-answer" class="answer-area" placeholder="Type your answer here…"></textarea>
+
+      <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap" id="action-row">
+        <button class="btn btn-primary" id="submit-btn" onclick="handleSubmit('first')">Submit Answer</button>
+      </div>
+    </div>`;
+}
+
+window.nextBranchQuestion = () => {
+  qIndex++;
+  followUpRound = 0;
+  renderBranchQuestion();
+};
+
+window.finishStory = () => {
+  if (!journey.storiesCompleted.includes(journey.currentStoryId)) {
+    journey.storiesCompleted.push(journey.currentStoryId);
+  }
+  journey.currentStoryId = null;
+  journey.currentBranchId = null;
+  journey.branchesCompletedThisStory = 0;
+
+  if (journey.storiesCompleted.length >= (curAssignment.requiredStories || 1)) {
+    completeAssignment();
+  } else {
+    renderStoryPicker();
   }
 };
-window.submitFollowUp = async (round) => {
-  const inputBox = $(`followup-answer-${round}`);
+
+/* ═══════════════════════════════════════════════
+   SHARED ANSWER HANDLING (linear + branching)
+═══════════════════════════════════════════════ */
+window.handleSubmit = async (mode, roundId) => {
+  const inputBox = mode === "first" ? $("student-answer") : $(`followup-answer-${roundId}`);
   const answer   = inputBox.value.trim();
   if (!answer) { toast("Please write an answer first.", true); return; }
 
-  // Disable the current follow-up box
-  inputBox.disabled = true;
-  inputBox.parentElement.querySelector("button").disabled = true;
-  inputBox.parentElement.querySelector("button").textContent = "Submitting…";
+  if (mode === "first") {
+    $("submit-btn").disabled = true;
+    inputBox.disabled = true;
+  } else {
+    inputBox.disabled = true;
+    const btn = inputBox.parentElement.querySelector("button");
+    if (btn) { btn.disabled = true; btn.textContent = "Submitting…"; }
+  }
 
   const fbArea = $("ai-feedback-area");
+  const thinkingId = `thinking-${Date.now()}`;
   fbArea.insertAdjacentHTML("beforeend",
-    `<div class="ai-response" id="thinking-${round}"><div class="ai-label">Tutor</div>
+    `<div class="ai-response" id="${thinkingId}"><div class="ai-label">Tutor</div>
      <div class="typing-dots"><span></span><span></span><span></span></div></div>`);
 
-  // Get AI feedback (uses the same conversation history)
   const rawFeedback = await getAIFeedback(answer);
 
-  // Parse signal
+  // Parse [CONTINUE]/[ADVANCE]
   let signal = "CONTINUE";
   let cleanFeedback = rawFeedback;
   if (rawFeedback.includes("[ADVANCE]")) {
@@ -957,28 +1479,25 @@ window.submitFollowUp = async (round) => {
     cleanFeedback = rawFeedback.replace(/\[CONTINUE\]/g, "").trim();
   }
 
-  // Replace thinking dots with feedback
-  $(`thinking-${round}`).remove();
+  const thinkingEl = $(thinkingId);
+  if (thinkingEl) thinkingEl.remove();
   fbArea.insertAdjacentHTML("beforeend",
     `<div class="exchange-block">
-       <p class="student-prior-answer"><strong>Your answer:</strong> ${answer}</p>
-       <div class="ai-response"><div class="ai-label">Tutor</div><p>${cleanFeedback}</p></div>
+       <p class="student-prior-answer"><strong>Your answer:</strong> ${escapeHTML(answer)}</p>
+       <div class="ai-response"><div class="ai-label">Tutor</div><p>${escapeHTML(cleanFeedback).replace(/\n/g,"<br/>")}</p></div>
      </div>`);
 
-  session.push({ question: curAssignment.questions[qIndex], answer, feedback: cleanFeedback });
-  followUpRound++;
+  // Save in session with context label
+  const ctx = getCurrentContextLabel();
+  const qText = getCurrentQuestionText();
+  session.push({ context:ctx, question:qText, answer, feedback:cleanFeedback });
 
-  const total = curAssignment.questions.length;
-  const isLastQuestion = (qIndex >= total - 1);
-  const forceAdvance   = followUpRound >= MAX_ROUNDS;
+  followUpRound++;
+  const forceAdvance = followUpRound >= MAX_ROUNDS_FOR_Q;
 
   if (signal === "ADVANCE" || forceAdvance) {
     const ar = $("action-row");
-    if (isLastQuestion) {
-      ar.innerHTML = `<button class="btn btn-primary" onclick="completeAssignment()">Complete Assignment ✓</button>`;
-    } else {
-      ar.innerHTML = `<button class="btn btn-primary" onclick="nextQuestion()">Next Question →</button>`;
-    }
+    ar.innerHTML = `<button class="btn btn-primary" onclick="goNextQuestion()">Next Question →</button>`;
     if (forceAdvance && signal !== "ADVANCE") {
       ar.insertAdjacentHTML("afterbegin",
         `<p style="color:var(--ink3);font-size:.85rem;margin-bottom:8px;width:100%">
@@ -986,66 +1505,116 @@ window.submitFollowUp = async (round) => {
     }
     ar.scrollIntoView({behavior:"smooth", block:"center"});
   } else {
-    // Another follow-up round — add another input box below
+    // Hide original input on first round; just add follow-up
+    if (mode === "first") {
+      inputBox.style.display = "none";
+      $("submit-btn").style.display = "none";
+    }
+    const newRoundId = followUpRound;
     fbArea.insertAdjacentHTML("beforeend", `
       <div class="followup-input-block">
         <p class="followup-prompt">Develop your answer further based on the tutor's feedback:</p>
-        <textarea id="followup-answer-${followUpRound}" class="answer-area" placeholder="Type your next response here…"></textarea>
-        <button class="btn btn-primary mt-sm" onclick="submitFollowUp(${followUpRound})">
-          Submit (round ${followUpRound + 1} of ${MAX_ROUNDS})
+        <textarea id="followup-answer-${newRoundId}" class="answer-area" placeholder="Type your next response here…"></textarea>
+        <button class="btn btn-primary mt-sm" onclick="handleSubmit('followup', ${newRoundId})">
+          Submit (round ${followUpRound + 1} of ${MAX_ROUNDS_FOR_Q})
         </button>
       </div>`);
     setTimeout(() => {
-      const newBox = $(`followup-answer-${followUpRound}`);
-      if (newBox) { newBox.focus(); newBox.scrollIntoView({behavior:"smooth", block:"center"}); }
+      const nb = $(`followup-answer-${newRoundId}`);
+      if (nb) { nb.focus(); nb.scrollIntoView({behavior:"smooth", block:"center"}); }
     }, 100);
   }
 };
 
-window.nextQuestion = () => {
-  qIndex++;
-  followUpRound = 0;  // reset for new question
-  renderQuestion();
+window.goNextQuestion = () => {
+  // Decide which next-question handler to call based on phase
+  if (curAssignment.type !== "branching") return nextLinearQuestion();
+  if (journey.phase === "story-questions")  return nextStoryQuestion();
+  if (journey.phase === "branch-questions") return nextBranchQuestion();
 };
+
+function getCurrentContextLabel() {
+  if (curAssignment.type !== "branching") return `Q${qIndex+1}`;
+  if (journey.phase === "story-questions") {
+    const s = curAssignment.stories.find(x=>x.id===journey.currentStoryId);
+    return `Story: ${s?.title||""} — Q${qIndex+1}`;
+  }
+  if (journey.phase === "branch-questions") {
+    const b = curAssignment.branches.find(x=>x.id===journey.currentBranchId);
+    return `Branch: ${b?.title||""} — Q${qIndex+1}`;
+  }
+  return `Q${qIndex+1}`;
+}
+
+function getCurrentQuestionText() {
+  if (curAssignment.type !== "branching") {
+    const q = curAssignment.questions[qIndex];
+    return typeof q === "string" ? q : q.text;
+  }
+  if (journey.phase === "story-questions") {
+    const s = curAssignment.stories.find(x=>x.id===journey.currentStoryId);
+    return s.questions[qIndex].text;
+  }
+  if (journey.phase === "branch-questions") {
+    const b = curAssignment.branches.find(x=>x.id===journey.currentBranchId);
+    return b.questions[qIndex].text;
+  }
+  return "";
+}
 
 async function getAIFeedback(studentAnswer) {
   const a = curAssignment;
-  const systemPrompt = `You are a Socratic tutor helping a student understand a reading passage.
-Your role: guide through questioning, never give away answers directly.
-${a.instructions ? "Additional instructions from the teacher: " + a.instructions : ""}
-Be encouraging but intellectually challenging. Keep responses to 3–5 sentences.
-After your feedback, always end with a single follow-up question that pushes deeper thinking.`;
+  let systemPrompt;
+  let passage;
+  let questionText = getCurrentQuestionText();
 
-  const conversationHistory = session.map(s => [
-    { role: "user",      content: `Question: ${s.question}\nMy answer: ${s.answer}` },
-    { role: "assistant", content: s.feedback }
+  if (a.type !== "branching") {
+    systemPrompt = a.instructions || "";
+    passage = a.passage;
+  } else {
+    if (journey.phase === "story-questions") {
+      const s = curAssignment.stories.find(x=>x.id===journey.currentStoryId);
+      systemPrompt = s.instructions || a.instructions || "";
+      passage = s.passage;
+    } else if (journey.phase === "branch-questions") {
+      const b = curAssignment.branches.find(x=>x.id===journey.currentBranchId);
+      systemPrompt = b.instructions || a.instructions || "";
+      passage = b.passage;
+    }
+  }
+
+  // Pull only exchanges from CURRENT question into history (not whole journey)
+  const currentCtx = getCurrentContextLabel();
+  const sameQ = session.filter(s => s.context === currentCtx);
+  const conversationHistory = sameQ.map(s => [
+    { role:"user", content:`Question: ${s.question}\nMy answer: ${s.answer}` },
+    { role:"assistant", content: s.feedback }
   ]).flat();
-
   conversationHistory.push({
-    role: "user",
-    content: `Passage:\n${a.passage}\n\nQuestion: ${a.questions[qIndex]}\n\nMy answer: ${studentAnswer}`
+    role:"user",
+    content:`Passage:\n${passage}\n\nQuestion: ${questionText}\n\nMy answer: ${studentAnswer}`
   });
-try {
+
+  try {
     const resp = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      headers: {"Content-Type":"text/plain;charset=utf-8"},
+      method:"POST",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
       body: JSON.stringify({
-        action:       "getAIFeedback",
+        action:"getAIFeedback",
         systemPrompt,
-        messages:     conversationHistory
+        messages: conversationHistory
       })
     });
     const data = await resp.json();
-    return data.feedback || "Thank you for your response. Let's think a little deeper — what evidence from the text supports your answer?";
+    return data.feedback || "Thank you for your response. What evidence from the text supports your thinking?";
   } catch(e) {
-    return "Great effort! Let's push further — what specific part of the passage supports your answer?";
+    return "Great effort! What specific part of the passage supports your answer?";
   }
 }
+
 window.completeAssignment = async () => {
   mc().innerHTML = `<div class="loading-spinner" style="margin-top:80px"></div>`;
-  const totalQ = curAssignment.questions.length;
 
-  // Save to Firestore
   const responseData = {
     assignmentId:    curAssignment.id,
     assignmentTitle: curAssignment.title,
@@ -1054,46 +1623,42 @@ window.completeAssignment = async () => {
     studentEmail:    user.email,
     teacherId:       curAssignment.teacherId,
     session,
-    totalQuestions:  totalQ,
-    submittedAt:     serverTimestamp()
+    journey: curAssignment.type === "branching" ? journey : null,
+    submittedAt: serverTimestamp()
   };
-  const ref = await addDoc(collection(db,"responses"), responseData);
+  await addDoc(collection(db,"responses"), responseData);
 
-  // Send to Apps Script (Google Sheets + Classroom grade)
   if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("REPLACE")) {
     try {
       await fetch(APPS_SCRIPT_URL, {
-        method: "POST",
-        headers: {"Content-Type":"text/plain;charset=utf-8"},
+        method:"POST",
+        headers:{"Content-Type":"text/plain;charset=utf-8"},
         body: JSON.stringify({
-          action:          "saveResponse",
+          action:"saveResponse",
           assignmentTitle: curAssignment.title,
           studentName:     user.displayName,
           studentEmail:    user.email,
           submittedAt:     new Date().toLocaleString(),
-          session,
-          classIds:        curAssignment.classIds || []
+          session
         })
       });
     } catch(e) { console.warn("Sheets sync failed:", e); }
   }
 
-  // Completion screen
   mc().innerHTML = `
     <div class="completion-card">
       <div class="completion-icon">🎉</div>
       <h2>Assignment Complete!</h2>
-      <p>Great work on <em>${curAssignment.title}</em>. Your responses have been saved and your teacher has been notified.</p>
+      <p>Great work on <em>${escapeHTML(curAssignment.title)}</em>. Your responses have been saved and your teacher has been notified.</p>
       <button class="btn btn-primary" onclick="renderStudentHome()">← Back to My Assignments</button>
     </div>`;
 };
 
-/* expose to window for onclick usage */
-window.renderTeacherHome    = renderTeacherHome;
+/* expose for onclick */
+window.renderTeacherHome      = renderTeacherHome;
 window.renderCreateAssignment = renderCreateAssignment;
-window.renderStudentHome    = renderStudentHome;
-window.renderAllResponses   = renderAllResponses;
-window.fetchTeacherClasses  = fetchTeacherClasses;
+window.renderStudentHome      = renderStudentHome;
+window.renderAllResponses     = renderAllResponses;
 </script>
 </body>
 </html>
