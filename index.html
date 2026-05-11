@@ -204,6 +204,33 @@
     font-size:.82rem; font-weight:600; color:var(--accent);
     margin-bottom:8px; text-transform:uppercase; letter-spacing:.04em;
   }
+  .rich-editor {
+  border:1.5px solid var(--border); border-radius:8px; background:var(--surface);
+  font-family:inherit; font-size:.95rem; color:var(--ink);
+}
+.rich-toolbar {
+  display:flex; gap:4px; padding:6px 8px; border-bottom:1px solid var(--border); background:var(--bg);
+  border-radius:8px 8px 0 0;
+}
+.rich-toolbar button {
+  background:transparent; border:none; padding:4px 10px; border-radius:4px;
+  font-size:.85rem; cursor:pointer; color:var(--ink2); font-family:inherit;
+}
+.rich-toolbar button:hover { background:var(--surface); color:var(--ink); }
+.rich-toolbar button.bold-btn { font-weight:700; }
+.rich-toolbar button.italic-btn { font-style:italic; }
+.rich-content {
+  min-height:120px; padding:10px 14px; outline:none; line-height:1.6;
+}
+.rich-content:focus { background:#fdfcfa; }
+.rich-content p { margin-bottom:8px; }
+.rich-content p:last-child { margin-bottom:0; }
+
+/* Style rendered formatted passages */
+.passage-box p { margin-bottom:12px; }
+.passage-box p:last-child { margin-bottom:0; }
+.question-text p { margin-bottom:8px; }
+.question-text p:last-child { margin-bottom:0; }
 
   /* Story chooser */
   .story-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:18px; }
@@ -398,6 +425,53 @@ function toast(msg, isError=false) {
 }
 
 function escapeHTML(s) { return (s||"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
+// Sanitize HTML to only allow safe formatting tags
+function sanitizeRichText(html) {
+  if (!html) return "";
+  // Create a temporary element to parse the HTML
+  const temp = document.createElement("div");
+  temp.innerHTML = html;
+  // Allowed tags
+  const allowed = ["P","BR","STRONG","B","EM","I","U","DIV","SPAN"];
+  // Walk all nodes and strip disallowed
+  const walk = (node) => {
+    const kids = Array.from(node.childNodes);
+    kids.forEach(child => {
+      if (child.nodeType === 1) { // element
+        if (!allowed.includes(child.tagName)) {
+          // Replace with its text content
+          const text = document.createTextNode(child.textContent);
+          child.parentNode.replaceChild(text, child);
+        } else {
+          // Strip all attributes (kills onclick, style, etc.)
+          Array.from(child.attributes).forEach(a => child.removeAttribute(a.name));
+          walk(child);
+        }
+      } else if (child.nodeType === 8) { // comment
+        child.remove();
+      }
+    });
+  };
+  walk(temp);
+  return temp.innerHTML;
+}
+// Create a rich text editor with toolbar. Returns the HTML string for insertion.
+let _richEditorCounter = 0;
+function richEditorHTML(idPrefix, initialHTML, placeholder) {
+  const id = `${idPrefix}-${++_richEditorCounter}`;
+  return `<div class="rich-editor" data-rich-id="${id}">
+    <div class="rich-toolbar">
+      <button type="button" class="bold-btn" onmousedown="event.preventDefault();document.execCommand('bold')" title="Bold (Ctrl+B)">B</button>
+      <button type="button" class="italic-btn" onmousedown="event.preventDefault();document.execCommand('italic')" title="Italic (Ctrl+I)">I</button>
+      <button type="button" onmousedown="event.preventDefault();document.execCommand('formatBlock', false, 'P')" title="Paragraph">¶</button>
+    </div>
+    <div class="rich-content" id="${id}" contenteditable="true" data-placeholder="${escapeHTML(placeholder||'')}">${initialHTML || ""}</div>
+  </div>`;
+}
+function getRichContent(id) {
+  const el = document.getElementById(id);
+  return el ? sanitizeRichText(el.innerHTML).trim() : "";
+}
 
 // Convert a Google Drive share URL to a viewable image URL
 function normaliseImageURL(url) {
@@ -563,7 +637,7 @@ function renderLinearForm(id, d, classes) {
       <input id="f-subject" class="field-input" value="${escapeHTML(d.subject||'')}" placeholder="e.g. Science, English, History…"/>
 
       <label class="field-label">Reading Passage *</label>
-      <textarea id="f-passage" class="field-textarea" rows="9" placeholder="Paste the article or passage here…">${escapeHTML(d.passage||'')}</textarea>
+      ${richEditorHTML("f-passage-rich", d.passage||"", "Paste the article or passage here…")}
 
       <label class="field-label">Questions <span style="color:var(--ink3);font-weight:400">(students answer each in turn)</span></label>
       <div id="q-container">
@@ -587,11 +661,13 @@ function renderLinearForm(id, d, classes) {
 
 function linearQuestionRow(i, val="", rounds=5) {
   const opts = [1,2,3,4,5].map(n => `<option value="${n}" ${rounds==n?'selected':''}>${n} round${n>1?'s':''}</option>`).join("");
-  return `<div class="question-row" id="qrow-${i}">
-    <span class="q-num">${i+1}.</span>
-    <input class="q-input" id="q-${i}" value="${escapeHTML(val)}" placeholder="Question ${i+1}…"/>
-    <select class="q-rounds" id="qr-${i}" title="Max coaching rounds">${opts}</select>
-    <button class="btn-icon" onclick="removeLinearQuestion(${i})" title="Remove">✕</button>
+  return `<div class="question-row" id="qrow-${i}" style="flex-direction:column;align-items:stretch;gap:6px;border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="q-num">${i+1}.</span>
+      <select class="q-rounds" id="qr-${i}" title="Max coaching rounds" style="margin-left:auto">${opts}</select>
+      <button class="btn-icon" onclick="removeLinearQuestion(${i})" title="Remove">✕</button>
+    </div>
+    ${richEditorHTML(`q-${i}-rich`, val||"", `Question ${i+1}…`)}
   </div>`;
 }
 window.addLinearQuestion = () => {
@@ -602,14 +678,17 @@ window.removeLinearQuestion = i => { const el=$(`qrow-${i}`); if(el) el.remove()
 
 window.saveLinear = async (existingId) => {
   const title   = $("f-title").value.trim();
-  const passage = $("f-passage").value.trim();
+  const passageEl = document.querySelector('[data-rich-id^="f-passage-rich"] .rich-content');
+  const passage = passageEl ? sanitizeRichText(passageEl.innerHTML).trim() : "";
   if (!title || !passage) { toast("Title and passage are required.", true); return; }
 
   const qs = [];
-  document.querySelectorAll(".q-input").forEach((inp,idx) => {
-    const t = inp.value.trim();
-    if (t) {
-      const r = parseInt(document.querySelectorAll(".q-rounds")[idx].value, 10) || 5;
+  document.querySelectorAll('#q-container .question-row').forEach((row) => {
+    const richEl = row.querySelector('.rich-content');
+    const t = richEl ? sanitizeRichText(richEl.innerHTML).trim() : "";
+    const stripped = t.replace(/<[^>]+>/g,"").trim();
+    if (stripped) {
+      const r = parseInt(row.querySelector('.q-rounds').value, 10) || 5;
       qs.push({ text:t, maxRounds:r });
     }
   });
@@ -727,7 +806,7 @@ function storyBlock(idx, s) {
       <p class="field-hint">Paste any public image URL. For Google Drive: right-click image in Drive → Share → Anyone with link → copy URL.</p>
 
       <label class="field-label">Passage *</label>
-      <textarea class="field-textarea s-passage" rows="6" placeholder="Paste the story or passage…">${escapeHTML(s.passage||'')}</textarea>
+      <div class="s-passage-rich">${richEditorHTML(`s-passage-${idx}`, s.passage||"", "Paste the story or passage…")}</div>
 
       <label class="field-label">Questions</label>
       <div class="s-questions">
@@ -755,7 +834,7 @@ function branchBlock(idx, b) {
       <input class="field-input b-desc" value="${escapeHTML(b.description||'')}" placeholder="One line shown to students on the branch picker"/>
 
       <label class="field-label">Passage / Reading *</label>
-      <textarea class="field-textarea b-passage" rows="6" placeholder="The text they'll read for this branch…">${escapeHTML(b.passage||'')}</textarea>
+      <div class="b-passage-rich">${richEditorHTML(`b-passage-${idx}`, b.passage||"", "The text they'll read for this branch…")}</div>
 
       <label class="field-label">Questions</label>
       <div class="b-questions">
@@ -771,11 +850,13 @@ function branchBlock(idx, b) {
 
 function qRow(prefix, parentIdx, qi, text="", rounds=5) {
   const opts = [1,2,3,4,5].map(n=>`<option value="${n}" ${rounds==n?'selected':''}>${n} round${n>1?'s':''}</option>`).join("");
-  return `<div class="question-row q-row-${prefix}-${parentIdx}-${qi}">
-    <span class="q-num">${qi+1}.</span>
-    <input class="q-input qx" value="${escapeHTML(text)}" placeholder="Question ${qi+1}…"/>
-    <select class="q-rounds qrx">${opts}</select>
-    <button class="btn-icon" onclick="removeQ('${prefix}',${parentIdx},${qi},this)" title="Remove">✕</button>
+  return `<div class="question-row q-row-${prefix}-${parentIdx}-${qi}" style="flex-direction:column;align-items:stretch;gap:6px;border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="q-num">${qi+1}.</span>
+      <select class="q-rounds qrx" style="margin-left:auto">${opts}</select>
+      <button class="btn-icon" onclick="removeQ('${prefix}',${parentIdx},${qi},this)" title="Remove">✕</button>
+    </div>
+    ${richEditorHTML(`${prefix}-${parentIdx}-q-${qi}-rich`, text||"", `Question ${qi+1}…`)}
   </div>`;
 }
 
@@ -828,13 +909,16 @@ window.saveBranching = async (existingId) => {
   document.querySelectorAll(".story-block").forEach((blk) => {
     const sTitle   = blk.querySelector(".s-title").value.trim();
     const sImage   = blk.querySelector(".s-image").value.trim();
-    const sPass    = blk.querySelector(".s-passage").value.trim();
+    const sPassEl = blk.querySelector(".s-passage-rich .rich-content");
+    const sPass = sPassEl ? sanitizeRichText(sPassEl.innerHTML).trim() : "";
     const sInstr   = blk.querySelector(".s-instructions").value.trim();
     if (!sTitle && !sPass) return; // skip empty
     const qs = [];
     blk.querySelectorAll(".s-questions .question-row").forEach(row => {
-      const t = row.querySelector(".qx").value.trim();
-      if (t) qs.push({ text:t, maxRounds:parseInt(row.querySelector(".qrx").value,10)||5 });
+      const richEl = row.querySelector('.rich-content');
+      const t = richEl ? sanitizeRichText(richEl.innerHTML).trim() : "";
+      const stripped = t.replace(/<[^>]+>/g,"").trim();
+      if (stripped) qs.push({ text:t, maxRounds:parseInt(row.querySelector(".qrx").value,10)||5 });
     });
     stories.push({
       id: blk.dataset.id || `s${Date.now()}_${stories.length}`,
@@ -847,13 +931,16 @@ window.saveBranching = async (existingId) => {
   document.querySelectorAll(".learnmore-block").forEach((blk) => {
     const bTitle = blk.querySelector(".b-title").value.trim();
     const bDesc  = blk.querySelector(".b-desc").value.trim();
-    const bPass  = blk.querySelector(".b-passage").value.trim();
+    const bPassEl = blk.querySelector(".b-passage-rich .rich-content");
+    const bPass = bPassEl ? sanitizeRichText(bPassEl.innerHTML).trim() : "";
     const bInstr = blk.querySelector(".b-instructions").value.trim();
     if (!bTitle && !bPass) return;
     const qs = [];
     blk.querySelectorAll(".b-questions .question-row").forEach(row => {
-      const t = row.querySelector(".qx").value.trim();
-      if (t) qs.push({ text:t, maxRounds:parseInt(row.querySelector(".qrx").value,10)||5 });
+      const richEl = row.querySelector('.rich-content');
+      const t = richEl ? sanitizeRichText(richEl.innerHTML).trim() : "";
+      const stripped = t.replace(/<[^>]+>/g,"").trim();
+      if (stripped) qs.push({ text:t, maxRounds:parseInt(row.querySelector(".qrx").value,10)||5 });
     });
     branches.push({
       id: blk.dataset.id || `b${Date.now()}_${branches.length}`,
@@ -1168,12 +1255,12 @@ function renderLinearQuestion() {
         <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--ink2);margin-bottom:8px;user-select:none">
           📄 Reading Passage ${qIndex>0?"(click to expand)":""}
         </summary>
-        <div class="passage-box">${escapeHTML(a.passage).replace(/\n/g,"<br/>")}</div>
+        <div class="passage-box">${a.passage||""}</div>
       </details>
 
       <div class="question-box" style="margin-top:16px">
         <p class="question-label">Question ${qIndex+1}</p>
-        <p class="question-text">${escapeHTML(q.text)}</p>
+        <p class="question-text">${q.text||""}</p>
       </div>
 
       <div id="ai-feedback-area"></div>
@@ -1296,12 +1383,12 @@ function renderStoryQuestion() {
         <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--ink2);margin-bottom:8px;user-select:none">
           📄 Story Passage ${qIndex>0?"(click to expand)":""}
         </summary>
-        <div class="passage-box">${escapeHTML(story.passage).replace(/\n/g,"<br/>")}</div>
+        <div class="passage-box">${story.passage||""}</div>
       </details>
 
       <div class="question-box" style="margin-top:16px">
         <p class="question-label">Question ${qIndex+1}</p>
-        <p class="question-text">${escapeHTML(q.text)}</p>
+        <p class="question-text">${q.text||""}</p>
       </div>
 
       <div id="ai-feedback-area"></div>
@@ -1405,12 +1492,12 @@ function renderBranchQuestion() {
         <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--ink2);margin-bottom:8px;user-select:none">
           📄 Reading ${qIndex>0?"(click to expand)":""}
         </summary>
-        <div class="passage-box">${escapeHTML(branch.passage).replace(/\n/g,"<br/>")}</div>
+        <div class="passage-box">${branch.passage||""}</div>
       </details>
 
       <div class="question-box" style="margin-top:16px">
         <p class="question-label">Question ${qIndex+1}</p>
-        <p class="question-text">${escapeHTML(q.text)}</p>
+        <p class="question-text">${q.text||""}</p>
       </div>
 
       <div id="ai-feedback-area"></div>
