@@ -204,6 +204,45 @@
     font-size:.82rem; font-weight:600; color:var(--accent);
     margin-bottom:8px; text-transform:uppercase; letter-spacing:.04em;
   }
+  /* ── PROMPT LAYERS UI ─────────────────────────── */
+  .prompt-layer-box {
+    border:1.5px solid var(--border); border-radius:var(--radius); padding:14px 16px;
+    margin-top:10px; background:var(--surface);
+  }
+  .prompt-layer-header {
+    display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;
+  }
+  .prompt-layer-label { font-weight:600; font-size:.9rem; color:var(--ink); }
+  .prompt-layer-controls { display:flex; gap:6px; margin-left:auto; flex-wrap:wrap; }
+  .prompt-layer-select { padding:7px 10px; border:1.5px solid var(--border); border-radius:6px; font-size:.9rem; background:var(--surface); font-family:inherit; min-width:200px; }
+  .prompt-multi-select { border:1.5px solid var(--border); border-radius:6px; padding:8px 10px; background:var(--surface); max-height:140px; overflow-y:auto; }
+  .prompt-multi-select label { display:flex; align-items:center; gap:8px; padding:4px 0; font-size:.88rem; cursor:pointer; }
+  .prompt-multi-select label input { accent-color:var(--accent); }
+  .prompt-preview {
+    background:#fdfcf8; border:1px dashed var(--border); border-radius:6px;
+    padding:10px 14px; margin-top:8px; font-size:.85rem; color:var(--ink2);
+    max-height:180px; overflow-y:auto; line-height:1.5; white-space:pre-wrap;
+  }
+  .prompt-preview-toggle {
+    background:none; border:none; color:var(--accent); cursor:pointer;
+    font-size:.82rem; padding:0; font-family:inherit;
+  }
+  .prompt-preview-toggle:hover { text-decoration:underline; }
+  .prompt-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px 20px; margin-bottom:12px;
+  }
+  .prompt-card-top { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
+  .prompt-card-title { font-family:'Lora',serif; font-size:1rem; }
+  .prompt-card-layer-tag { font-size:.7rem; font-weight:700; padding:3px 9px; border-radius:20px; text-transform:uppercase; letter-spacing:.05em; }
+  .prompt-card-layer-tag.layer1 { background:#e8f0fb; color:#2563eb; }
+  .prompt-card-layer-tag.layer2 { background:#e8f4ee; color:var(--accent); }
+  .prompt-card-layer-tag.layer3 { background:#fef3e2; color:#d97706; }
+  .prompt-card-body { font-size:.88rem; color:var(--ink2); line-height:1.6; white-space:pre-wrap; max-height:90px; overflow:hidden; position:relative; }
+  .prompt-card-body.expanded { max-height:none; }
+  .prompt-card-fade { position:absolute; bottom:0; left:0; right:0; height:30px; background:linear-gradient(transparent, var(--surface)); pointer-events:none; }
+  .prompt-card-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .builtin-badge { font-size:.7rem; color:var(--ink3); margin-left:6px; font-style:italic; }
   .rich-editor {
   border:1.5px solid var(--border); border-radius:8px; background:var(--surface);
   font-family:inherit; font-size:.95rem; color:var(--ink);
@@ -472,6 +511,422 @@ function getRichContent(id) {
   const el = document.getElementById(id);
   return el ? sanitizeRichText(el.innerHTML).trim() : "";
 }
+/* ═══════════════════════════════════════════════════════════
+   PROMPT LIBRARY
+═══════════════════════════════════════════════════════════ */
+
+const BUILTIN_PROMPTS = {
+  layer1: [
+    {
+      id: "builtin-l1-standard",
+      name: "Standard Global Baseline",
+      builtin: true,
+      text: `You are a coach speaking directly to the student. Use second-person voice — "you noticed", "your answer", "what do you think" — never refer to them in third person.
+
+Keep responses short: 2–4 sentences max. Long responses overwhelm students and signal you're taking over the work. One good question is often enough.
+
+Speak warmly and directly. Be like a thoughtful older sibling — interested, honest, not chatty, not cold, not performative. Do not say "praise God" or "amen" or use language that sounds performative.
+
+Stay within historic, mainstream orthodox Christian theology. The Bible is the inspired, authoritative Word of God. Jesus is fully God and fully human. Humans are made in God's image and affected by sin. Salvation is by grace through faith in Jesus Christ. Do not introduce theological controversies (e.g., Calvinism vs. Arminianism) at this level.
+
+Do not write the student's answer for them. Do not grade. Do not lecture. If you find yourself writing more than four sentences, stop and ask a question instead.`
+    }
+  ],
+  layer2: [
+    {
+      id: "builtin-l2-bible-socratic",
+      name: "Bible Study — Socratic",
+      builtin: true,
+      text: `You are guiding the student through close reading of a Scripture passage. Ask more than you tell.
+
+When the student gives a surface answer, don't give them the deeper answer — ask a question that helps them find it. Point them back to specific verses: "Where in the text do you see that?" "Which words made you think of that?"
+
+Welcome wrestling. "I don't get it" is an opportunity. Push past polished Sunday-school answers gently: "That's a familiar answer — is it your honest one right now?"
+
+If they ask you to give them the answer, redirect with warmth: "I won't write it for you, but I'll help you sharpen what you write. Give me one try, even if you're not sure."`
+    },
+    {
+      id: "builtin-l2-misreadings",
+      name: "Common Misreadings Coach",
+      builtin: true,
+      text: `Help the student notice where readers commonly misinterpret this passage. Don't tell them the mistake — surface it through questions.
+
+When they accept a common misreading without thinking, gently press: "That's how most people read it. Read verse __ again. Does the text actually say that, or are we filling in?"
+
+Honor textual evidence above intuition. If their reading depends on something the text doesn't say, ask: "Show me the line that says that. Are we adding to the passage, or reading what's there?"
+
+Celebrate it specifically when they catch themselves making an assumption the text doesn't support.`
+    },
+    {
+      id: "builtin-l2-cultural-context",
+      name: "Cultural & Historical Context",
+      builtin: true,
+      text: `Help the student understand how the original audience would have heard this. You can share specific cultural/historical context when it directly illuminates the text, but always tie it back to a question.
+
+Example: "In the culture Jesus was speaking to, an older man running was shameful — dignified men didn't run. So when the father runs to his son, he's giving up dignity to get there faster. What does that tell you about him?"
+
+Don't lecture about the ancient world. One context point per response, then a question. Keep the student doing the interpretive work.`
+    },
+    {
+      id: "builtin-l2-application",
+      name: "Application & Reflection",
+      builtin: true,
+      text: `Help the student locate themselves honestly in the passage. There is no single right answer — you are listening for honest self-reflection, not a particular conclusion.
+
+Watch for the polished safe answer ("I'm forgiven like the younger brother"). Gently press past it: "That's true, but it's the easy one. What about [the harder identification]?"
+
+If they identify something genuinely hard about themselves, affirm the courage of that observation — without lecturing or piling on more reflection.
+
+Help them get specific. Not "be more loving" but "stop holding [specific resentment] toward [specific person]." Specificity is where application becomes real.`
+    },
+    {
+      id: "builtin-l2-comprehension",
+      name: "Comprehension Check",
+      builtin: true,
+      text: `Check that the student has understood what the text actually says (before moving to interpretation). Focus on factual recall and basic comprehension.
+
+If they get a fact wrong, don't just correct — point them back: "Read verse __ again. What does it actually say?"
+
+If they get the basics right, advance quickly. Don't drag a comprehension question into a full Socratic deep-dive — that's not what this question is for. Affirm and advance.`
+    },
+    {
+      id: "builtin-l2-vocabulary",
+      name: "Vocabulary & Language",
+      builtin: true,
+      text: `Help the student wrestle with specific words and phrases in the text. When they use a key term, ask what they think it means before defining it.
+
+If they ask what a word means, give a real answer — but follow with a question: "It means [definition]. Now — which character in this story does that word actually fit?"
+
+Help them see that words in Scripture often have layers (e.g., "prodigal" = wasteful, not just sinful). Surface those layers through their own noticing.`
+    },
+    {
+      id: "builtin-l2-compare",
+      name: "Compare & Contrast",
+      builtin: true,
+      text: `Help the student notice what's similar and different between two passages, characters, or ideas. Push past surface comparisons to the meaningful ones.
+
+"What's similar? What's different?" — and then: "What does the difference tell you?" The contrast is where the meaning often lives.
+
+If they only notice one side (the obvious comparison), redirect: "What's something the two share that's easy to miss?"`
+    },
+    {
+      id: "builtin-l2-worldview",
+      name: "Worldview Analysis",
+      builtin: true,
+      text: `Help the student see what the text assumes — about God, humans, the world, what matters. Surface the worldview behind the words.
+
+"What does this passage take for granted?" "What would have to be true for this to make sense?"
+
+If they assume a modern Western worldview when reading, gently surface it: "We tend to read this as being about [individual]. Could it be about something bigger? What if the audience heard it as being about [community]?"
+
+Do not turn this into an academic exercise. The goal is honest noticing, not lecture.`
+    }
+  ],
+  layer3: []
+};
+
+let _promptCache = null;  // { layer1:[], layer2:[], layer3:[] }
+
+async function loadPromptLibrary() {
+  if (_promptCache) return _promptCache;
+  const lib = { layer1:[], layer2:[], layer3:[] };
+  try {
+    const snp = await getDocs(query(collection(db,"prompts"), where("teacherId","==",user.uid)));
+    snp.forEach(d => {
+      const p = { id:d.id, ...d.data() };
+      if (lib[p.layer]) lib[p.layer].push(p);
+    });
+  } catch(e) { console.warn("loadPromptLibrary:", e); }
+  // Add built-ins that haven't been "hidden" by user
+  ["layer1","layer2","layer3"].forEach(layer => {
+    BUILTIN_PROMPTS[layer].forEach(bp => {
+      // Skip if user has a deletion marker for this builtin
+      const hidden = lib[layer].find(p => p.hiddenBuiltinId === bp.id);
+      if (!hidden) lib[layer].unshift(bp); // built-ins listed first
+    });
+  });
+  _promptCache = lib;
+  return lib;
+}
+
+function invalidatePromptCache() { _promptCache = null; }
+
+async function savePromptToLibrary(layer, name, text, existingId) {
+  const data = { layer, name, text, teacherId:user.uid, updatedAt: serverTimestamp() };
+  if (existingId) {
+    await setDoc(doc(db,"prompts",existingId), data, { merge:true });
+  } else {
+    data.createdAt = serverTimestamp();
+    await addDoc(collection(db,"prompts"), data);
+  }
+  invalidatePromptCache();
+}
+
+async function deletePromptFromLibrary(id, isBuiltin, builtinId, layer) {
+  if (isBuiltin) {
+    // Built-ins can't be deleted, but we can hide them
+    await addDoc(collection(db,"prompts"), {
+      teacherId:user.uid, layer, hiddenBuiltinId:builtinId, createdAt:serverTimestamp()
+    });
+  } else {
+    await deleteDoc(doc(db,"prompts",id));
+  }
+  invalidatePromptCache();
+}
+
+/* ── Render prompt layer selectors inside any form ───────── */
+async function renderPromptLayerSelector(containerId, layer, multiSelect, currentValue) {
+  const lib = await loadPromptLibrary();
+  const items = (lib[layer] || []).filter(p => !p.hiddenBuiltinId);
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const layerNames = {
+    layer1: "Global Baseline",
+    layer2: "Preset Approach",
+    layer3: "Assignment-Specific Notes"
+  };
+  const layerHints = {
+    layer1: "Foundational rules — tone, length, theology. Usually the same across all assignments.",
+    layer2: "The pedagogical approach for this assignment. Pick one or combine several.",
+    layer3: "Notes specific to THIS assignment (watch-points, what to push on)."
+  };
+
+  let html = `<div class="prompt-layer-box" data-layer="${layer}">
+    <div class="prompt-layer-header">
+      <div>
+        <div class="prompt-layer-label">${layerNames[layer]}</div>
+        <p class="field-hint" style="margin:2px 0 0">${layerHints[layer]}</p>
+      </div>
+      <div class="prompt-layer-controls">
+        <button type="button" class="btn btn-ghost" onclick="openPromptEditor('${layer}', null, '${containerId}')" style="padding:5px 10px;font-size:.8rem">+ Add new</button>
+      </div>
+    </div>`;
+
+  if (multiSelect) {
+    // Layer 2 — multi-select checkboxes
+    const selectedIds = (currentValue || []).filter(v => typeof v === "string");
+    html += `<div class="prompt-multi-select" id="${containerId}-checks">`;
+    if (items.length === 0) {
+      html += `<p style="color:var(--ink3);font-size:.85rem">No options yet. Click "Add new" to create one.</p>`;
+    } else {
+      items.forEach(p => {
+        const checked = selectedIds.includes(p.id) ? "checked" : "";
+        html += `<label>
+          <input type="checkbox" value="${p.id}" data-text="${escapeAttr(p.text)}" ${checked} onchange="updateLayerPreview('${containerId}')"/>
+          <span>${escapeHTML(p.name)}${p.builtin?'<span class="builtin-badge">(built-in)</span>':''}</span>
+          <button type="button" class="prompt-preview-toggle" style="margin-left:auto" onclick="event.preventDefault();openPromptEditor('${layer}', '${p.id}', '${containerId}', ${p.builtin?'true':'false'})">edit</button>
+        </label>`;
+      });
+    }
+    html += `</div>`;
+  } else {
+    // Layer 1, 3 — single select
+    const selectedId = currentValue || (items[0]?.id || "");
+    html += `<select class="prompt-layer-select" id="${containerId}-select" onchange="updateLayerPreview('${containerId}')" style="width:100%;max-width:none">`;
+    if (layer === "layer3") html += `<option value="">— None (no assignment-specific notes) —</option>`;
+    items.forEach(p => {
+      const selected = p.id === selectedId ? "selected" : "";
+      html += `<option value="${p.id}" data-text="${escapeAttr(p.text)}" ${selected}>${escapeHTML(p.name)}${p.builtin?' (built-in)':''}</option>`;
+    });
+    html += `</select>`;
+    html += `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+      <button type="button" class="btn btn-ghost" style="padding:5px 10px;font-size:.8rem" onclick="editSelectedPrompt('${layer}','${containerId}')">✏️ Edit selected</button>
+    </div>`;
+  }
+
+  html += `
+    <button type="button" class="prompt-preview-toggle mt-sm" onclick="togglePromptPreview('${containerId}')">▾ Show combined preview</button>
+    <div class="prompt-preview hidden" id="${containerId}-preview"></div>
+  </div>`;
+
+  container.innerHTML = html;
+  updateLayerPreview(containerId);
+}
+
+function escapeAttr(s) { return (s||"").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+
+window.togglePromptPreview = (containerId) => {
+  const pv = document.getElementById(`${containerId}-preview`);
+  if (!pv) return;
+  pv.classList.toggle("hidden");
+};
+
+window.updateLayerPreview = (containerId) => {
+  const box = document.querySelector(`[data-layer][id^="${containerId}"]`) || document.getElementById(containerId);
+  if (!box) return;
+  const checks = document.getElementById(`${containerId}-checks`);
+  const select = document.getElementById(`${containerId}-select`);
+  let combined = "";
+  if (checks) {
+    const selected = Array.from(checks.querySelectorAll("input:checked"));
+    combined = selected.map(c => c.dataset.text).filter(Boolean).join("\n\n");
+  } else if (select) {
+    const opt = select.options[select.selectedIndex];
+    combined = opt?.dataset.text || "";
+  }
+  const pv = document.getElementById(`${containerId}-preview`);
+  if (pv) pv.textContent = combined || "(nothing selected)";
+};
+
+window.editSelectedPrompt = (layer, containerId) => {
+  const select = document.getElementById(`${containerId}-select`);
+  if (!select || !select.value) { toast("Nothing to edit.", true); return; }
+  // Built-ins have IDs starting with "builtin-"
+  const isBuiltin = select.value.startsWith("builtin-");
+  openPromptEditor(layer, select.value, containerId, isBuiltin);
+};
+
+window.openPromptEditor = async (layer, promptId, containerId, isBuiltin) => {
+  const lib = await loadPromptLibrary();
+  const existing = promptId ? (lib[layer] || []).find(p => p.id === promptId) : null;
+  const isB = existing?.builtin || isBuiltin === true || isBuiltin === "true";
+
+  document.body.insertAdjacentHTML("beforeend", `
+    <div class="modal-overlay" id="prompt-editor-modal" onclick="if(event.target.id==='prompt-editor-modal')closePromptEditor()">
+      <div class="modal">
+        <h2>${promptId ? "Edit" : "New"} Prompt</h2>
+        <p style="color:var(--ink3);font-size:.85rem;margin-bottom:16px">Layer: ${ {layer1:"Global Baseline",layer2:"Preset Approach",layer3:"Assignment-Specific Notes"}[layer] }</p>
+
+        ${isB ? `<p style="background:#e8f0fb;color:#2563eb;padding:8px 12px;border-radius:6px;font-size:.85rem;margin-bottom:14px">📌 This is a built-in prompt. Editing creates a new copy — the original stays available.</p>` : ""}
+
+        <label class="field-label" style="margin-top:0">Name</label>
+        <input id="pe-name" class="field-input" value="${escapeHTML(existing?.name || "")}" placeholder="e.g. Bible Study Socratic v2"/>
+
+        <label class="field-label">Prompt Text</label>
+        <textarea id="pe-text" class="field-textarea" rows="12" placeholder="Type the prompt instructions…">${escapeHTML(existing?.text || "")}</textarea>
+
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="closePromptEditor()">Cancel</button>
+          ${(existing && !isB) ? `<button class="btn btn-primary" onclick="savePromptEdit('${layer}','${promptId}','${containerId}',false)">Update existing</button>` : ""}
+          <button class="btn btn-primary" onclick="savePromptEdit('${layer}','${promptId}','${containerId}',true)">${existing ? "Save as new" : "Save"}</button>
+        </div>
+      </div>
+    </div>`);
+};
+
+window.closePromptEditor = () => {
+  const m = document.getElementById("prompt-editor-modal"); if (m) m.remove();
+};
+
+window.savePromptEdit = async (layer, promptId, containerId, asNew) => {
+  const name = document.getElementById("pe-name").value.trim();
+  const text = document.getElementById("pe-text").value.trim();
+  if (!name || !text) { toast("Name and text are required.", true); return; }
+
+  // If editing an existing user prompt (not asNew, has promptId, not built-in)
+  if (!asNew && promptId && !promptId.startsWith("builtin-")) {
+    await savePromptToLibrary(layer, name, text, promptId);
+    toast("Prompt updated ✓");
+  } else {
+    await savePromptToLibrary(layer, name, text, null);
+    toast("Prompt saved ✓");
+  }
+
+  closePromptEditor();
+
+  // Re-render the selector. We need to know which one was open.
+  if (containerId === "_library_") {
+    renderPromptLibrary();
+  } else {
+    // Figure out what kind of selector was there (multi vs single)
+    const checks = document.getElementById(`${containerId}-checks`);
+    const multi = !!checks;
+    let currentValue = null;
+    if (multi) {
+      currentValue = Array.from(checks.querySelectorAll("input:checked")).map(c=>c.value);
+    } else {
+      const sel = document.getElementById(`${containerId}-select`);
+      currentValue = sel?.value;
+    }
+    await renderPromptLayerSelector(containerId, layer, multi, currentValue);
+  }
+};
+
+/* ── Prompt Library page (sidebar nav) ──────────────────── */
+window.renderPromptLibrary = async () => {
+  setActiveNav("nav-prompts");
+  mc().innerHTML = `
+    <div class="page-header">
+      <div><h1 class="page-title">Prompts Library</h1><p class="page-sub">Reusable AI tutor instruction templates</p></div>
+    </div>
+    <div id="library-content"><div class="loading-spinner"></div></div>`;
+
+  invalidatePromptCache();
+  const lib = await loadPromptLibrary();
+  const cont = document.getElementById("library-content");
+
+  const layerInfo = [
+    { key:"layer1", title:"Layer 1 · Global Baseline", desc:"Foundational rules — tone, length, theology", tag:"layer1" },
+    { key:"layer2", title:"Layer 2 · Preset Approaches", desc:"Pedagogical templates for different question types", tag:"layer2" },
+    { key:"layer3", title:"Layer 3 · Assignment-Specific Notes", desc:"Saved notes from past assignments you can reuse", tag:"layer3" }
+  ];
+
+  let html = "";
+  layerInfo.forEach(layer => {
+    const items = (lib[layer.key]||[]).filter(p=>!p.hiddenBuiltinId);
+    html += `
+      <div style="margin-bottom:36px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap">
+          <div>
+            <h2 style="font-size:1.2rem;margin-bottom:2px">${layer.title}</h2>
+            <p style="color:var(--ink3);font-size:.88rem">${layer.desc}</p>
+          </div>
+          <button class="btn btn-primary" onclick="openPromptEditor('${layer.key}', null, '_library_')">+ Add</button>
+        </div>
+        ${items.length===0
+          ? `<p style="color:var(--ink3);font-style:italic;font-size:.9rem">No prompts in this layer yet.</p>`
+          : items.map(p => `
+            <div class="prompt-card">
+              <div class="prompt-card-top">
+                <div>
+                  <span class="prompt-card-title">${escapeHTML(p.name)}</span>
+                  ${p.builtin?'<span class="builtin-badge">built-in</span>':""}
+                </div>
+                <span class="prompt-card-layer-tag ${layer.tag}">${layer.key.replace("layer","L")}</span>
+              </div>
+              <div class="prompt-card-body" id="pc-body-${p.id}">${escapeHTML(p.text)}<div class="prompt-card-fade"></div></div>
+              <div class="prompt-card-actions">
+                <button class="btn btn-ghost" onclick="toggleCardBody('${p.id}')">Show full</button>
+                <button class="btn btn-ghost" onclick="openPromptEditor('${layer.key}','${p.id}','_library_',${p.builtin?'true':'false'})">${p.builtin?'Edit (creates copy)':'✏️ Edit'}</button>
+                ${!p.builtin?`<button class="btn btn-ghost btn-danger" onclick="deletePrompt('${p.id}', false, '', '${layer.key}')">🗑 Delete</button>`:`<button class="btn btn-ghost btn-danger" onclick="deletePrompt('','true','${p.id}','${layer.key}')">🗑 Hide</button>`}
+              </div>
+            </div>`).join("")}
+      </div>`;
+  });
+  cont.innerHTML = html;
+};
+
+window.toggleCardBody = (id) => {
+  const body = document.getElementById(`pc-body-${id}`);
+  if (!body) return;
+  body.classList.toggle("expanded");
+  const fade = body.querySelector(".prompt-card-fade");
+  if (fade) fade.style.display = body.classList.contains("expanded") ? "none" : "block";
+};
+
+window.deletePrompt = async (id, isBuiltin, builtinId, layer) => {
+  const isB = (isBuiltin === true || isBuiltin === "true");
+  const msg = isB ? "Hide this built-in prompt from your library? (You can restore it by clearing your prompts data.)" : "Delete this prompt permanently?";
+  if (!confirm(msg)) return;
+  await deletePromptFromLibrary(id, isB, builtinId, layer);
+  renderPromptLibrary();
+  toast(isB ? "Hidden." : "Deleted.");
+};
+
+/* ── Resolve selections back to text at save & runtime ──── */
+async function resolvePromptSelection(layer, value) {
+  const lib = await loadPromptLibrary();
+  const items = lib[layer] || [];
+  if (Array.isArray(value)) {
+    // Multi-select (Layer 2)
+    return value.map(id => items.find(p=>p.id===id)?.text || "").filter(Boolean).join("\n\n");
+  } else {
+    const found = items.find(p=>p.id===value);
+    return found?.text || "";
+  }
+}
+
 
 // Convert a Google Drive share URL to a viewable image URL
 function normaliseImageURL(url) {
@@ -525,6 +980,7 @@ function buildSidebar() {
     sb.innerHTML = `
       <span class="nav-section">Teacher</span>
       <button class="nav-item active" id="nav-assignments" onclick="renderTeacherHome()">📋 Assignments</button>
+      <button class="nav-item" id="nav-prompts" onclick="renderPromptLibrary()">🧠 Prompts</button>
       <button class="nav-item" id="nav-responses" onclick="renderAllResponses()">📊 Responses</button>`;
   } else {
     sb.innerHTML = `
@@ -646,8 +1102,10 @@ function renderLinearForm(id, d, classes) {
       <button class="btn btn-ghost mt-sm" onclick="addLinearQuestion()">+ Add Question</button>
 
       <label class="field-label">AI Tutor Instructions</label>
-      <textarea id="f-instructions" class="field-textarea" rows="6" placeholder="Encourage students to quote the text. Never reveal the answer directly. After each response, ask one follow-up that deepens understanding.">${escapeHTML(d.instructions||'')}</textarea>
-      <p class="field-hint">This shapes how the AI responds to each student. The AI is always Socratic.</p>
+      <p class="field-hint" style="margin-bottom:10px">Build the AI tutor's instructions in three layers. Each layer is optional except where noted.</p>
+      <div id="prompt-l1"></div>
+      <div id="prompt-l2"></div>
+      <div id="prompt-l3"></div>
 
       <label class="field-label">Post to Google Classroom Classes</label>
       ${renderClassCheckboxes(classes, d.classIds||[])}
@@ -657,6 +1115,12 @@ function renderLinearForm(id, d, classes) {
         <button class="btn btn-primary" onclick="saveLinear('${id||""}')">${id ? "Save Changes" : "Publish"}</button>
       </div>
     </div>`;
+
+  // Render prompt layer selectors
+  const promptCfg = d.promptCfg || {};
+  renderPromptLayerSelector("prompt-l1", "layer1", false, promptCfg.layer1);
+  renderPromptLayerSelector("prompt-l2", "layer2", true,  promptCfg.layer2 || []);
+  renderPromptLayerSelector("prompt-l3", "layer3", false, promptCfg.layer3);
 }
 
 function linearQuestionRow(i, val="", rounds=5) {
@@ -695,18 +1159,32 @@ window.saveLinear = async (existingId) => {
   if (!qs.length) { toast("Add at least one question.", true); return; }
 
   const { classIds, classNames } = readClassChecks();
+  // Read prompt-layer selections
+  const l1sel = document.getElementById("prompt-l1-select");
+  const l2checks = document.getElementById("prompt-l2-checks");
+  const l3sel = document.getElementById("prompt-l3-select");
+  const promptCfg = {
+    layer1: l1sel?.value || "",
+    layer2: l2checks ? Array.from(l2checks.querySelectorAll("input:checked")).map(c=>c.value) : [],
+    layer3: l3sel?.value || ""
+  };
+  const resolvedInstructions = [
+    await resolvePromptSelection("layer1", promptCfg.layer1),
+    await resolvePromptSelection("layer2", promptCfg.layer2),
+    await resolvePromptSelection("layer3", promptCfg.layer3)
+  ].filter(Boolean).join("\n\n");
+
   const payload = {
     type:"linear", title, passage,
     subject:      $("f-subject").value.trim(),
     questions:    qs,
-    instructions: $("f-instructions").value.trim(),
+    promptCfg,
+    instructions: resolvedInstructions,
     classIds, classNames,
     teacherId:    user.uid,
     teacherName:  user.displayName,
     updatedAt:    serverTimestamp()
   };
-  await commonSaveAndPost(existingId, payload);
-};
 
 /* ────────────────────────────────────────────
    BRANCHING FORM
@@ -735,8 +1213,10 @@ function renderBranchingForm(id, d, classes) {
       <textarea id="f-intro" class="field-textarea" rows="3" placeholder="Brief intro shown to students before they pick a story…">${escapeHTML(d.intro||'')}</textarea>
 
       <label class="field-label">Default AI Tutor Instructions</label>
-      <textarea id="f-instructions" class="field-textarea" rows="5" placeholder="Default coaching style. Each story or branch can override this individually.">${escapeHTML(d.instructions||'')}</textarea>
-      <p class="field-hint">Used unless a specific story or branch overrides it.</p>
+      <p class="field-hint" style="margin-bottom:10px">Used unless a story or branch overrides it.</p>
+      <div id="prompt-l1"></div>
+      <div id="prompt-l2"></div>
+      <div id="prompt-l3"></div>
 
       <!-- ── STORIES ── -->
       <div class="branch-section">
@@ -786,6 +1266,11 @@ function renderBranchingForm(id, d, classes) {
         <button class="btn btn-primary" onclick="saveBranching('${id||""}')">${id ? "Save Changes" : "Publish"}</button>
       </div>
     </div>`;
+
+  const promptCfg = d.promptCfg || {};
+  renderPromptLayerSelector("prompt-l1", "layer1", false, promptCfg.layer1);
+  renderPromptLayerSelector("prompt-l2", "layer2", true,  promptCfg.layer2 || []);
+  renderPromptLayerSelector("prompt-l3", "layer3", false, promptCfg.layer3);
 }
 
 function emptyStory(i)  { return { id:`s${Date.now()}_${i}`, title:"", imageUrl:"", passage:"", instructions:"", questions:[{text:"",maxRounds:5}] }; }
@@ -956,12 +1441,27 @@ window.saveBranching = async (existingId) => {
   if (reqStories > stories.length) { toast(`You require ${reqStories} stories but only have ${stories.length}.`, true); return; }
   if (reqBranches > branches.length) { toast(`You require ${reqBranches} branches but only have ${branches.length}.`, true); return; }
 
+  const l1sel = document.getElementById("prompt-l1-select");
+  const l2checks = document.getElementById("prompt-l2-checks");
+  const l3sel = document.getElementById("prompt-l3-select");
+  const promptCfg = {
+    layer1: l1sel?.value || "",
+    layer2: l2checks ? Array.from(l2checks.querySelectorAll("input:checked")).map(c=>c.value) : [],
+    layer3: l3sel?.value || ""
+  };
+  const resolvedInstructions = [
+    await resolvePromptSelection("layer1", promptCfg.layer1),
+    await resolvePromptSelection("layer2", promptCfg.layer2),
+    await resolvePromptSelection("layer3", promptCfg.layer3)
+  ].filter(Boolean).join("\n\n");
+
   const { classIds, classNames } = readClassChecks();
   const payload = {
     type:"branching", title,
     subject:        $("f-subject").value.trim(),
     intro:          $("f-intro").value.trim(),
-    instructions:   $("f-instructions").value.trim(),
+    promptCfg,
+    instructions:   resolvedInstructions,
     stories, branches,
     requiredStories:  reqStories,
     requiredBranches: reqBranches,
@@ -970,8 +1470,6 @@ window.saveBranching = async (existingId) => {
     teacherName: user.displayName,
     updatedAt:   serverTimestamp()
   };
-  await commonSaveAndPost(existingId, payload);
-};
 
 /* ────────────────────────────────────────────
    Shared save/post + class checkboxes
