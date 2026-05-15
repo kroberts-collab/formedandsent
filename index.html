@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>FormedAndSent</title>
+<title>your-project</title>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
 <style>
   :root {
@@ -352,7 +352,7 @@
 <div id="landing">
   <div class="landing-card">
     <div class="logo-mark">📖</div>
-    <h1>FormedAndSent</h1>
+    <h1>your-project</h1>
     <p class="landing-tagline">AI-powered reading assignments with personalised Socratic feedback for every student.</p>
     <hr class="divider"/>
     <button class="btn btn-google" onclick="signIn()">
@@ -365,7 +365,7 @@
 
 <div id="app">
   <header class="topbar">
-    <span class="topbar-logo">📖 FormedAndSent</span>
+    <span class="topbar-logo">📖 your-project</span>
     <span class="topbar-spacer"></span>
     <span class="topbar-role" id="topbar-role">Student</span>
     <div class="user-pill">
@@ -397,15 +397,15 @@ import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, deleteD
    🔧  CONFIG  — paste your existing values here
 ──────────────────────────────────────────────── */
 const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyDpwK7arl0FS6uKnYyAI3O_hgkwM178A9Y",
-    authDomain: "formedandsent.firebaseapp.com",
-    projectId: "formedandsent",
-    storageBucket: "formedandsent.firebasestorage.app",
-    messagingSenderId: "1031066699010",
-    appId: "1:1031066699010:web:617cb6f11fd5139c35ee1b"
+    apiKey: "redacted",
+    authDomain: "your-project.firebaseapp.com",
+    projectId: "your-project",
+    storageBucket: "your-project.firebasestorage.app",
+    messagingSenderId: "Redacted",
+    appId: "1:Redacted:web:617cb6f11fd5139c35ee1b"
   };
 // Your Google Apps Script web app URL (handles Sheets + Classroom)
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHKV-_Un-9xH9c0RRpUdcz7CCsZZYUhnldEgkcJX8bH8rNmT_ZUKdRuYrejhVFGIbbvg/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/redacted";
 /* ──────────────────────────────────────────── */
 
 const fbApp = initializeApp(FIREBASE_CONFIG);
@@ -890,7 +890,7 @@ async function renderTeacherHome() {
     const a = d.data();
     const isBranching = a.type === "branching";
     const summary = isBranching
-      ? `${(a.stories||[]).length} stories · ${(a.branches||[]).length} learn-more options`
+      ? `${(a.stories||[]).length} stories · ${(a.branches||[]).length} learn-more templates`
       : `${(a.questions||[]).length} questions`;
     grid.innerHTML += `
       <div class="card">
@@ -1059,10 +1059,11 @@ window.saveLinear = async (existingId) => {
    BRANCHING FORM
 ──────────────────────────────────────────── */
 function renderBranchingForm(id, d, classes) {
-  const stories  = (d.stories  || []).length ? d.stories  : [emptyStory(0)];
-  const branches = (d.branches || []).length ? d.branches : [emptyBranch(0)];
-  const reqStories  = d.requiredStories  ?? Math.min(1, stories.length);
-  const reqBranches = d.requiredBranches ?? Math.min(1, branches.length);
+  const stories = (d.stories || []).length ? d.stories : [emptyStory(0)];
+  // Global branches pool still exists for reuse, but connection happens per-story
+  const branches = (d.branches || []).length ? d.branches : [];
+  const reqStories = d.requiredStories ?? Math.min(1, stories.length);
+  const reqBranches = d.requiredBranches ?? 0;
 
   mc().innerHTML = `
     <div class="form-page">
@@ -1073,13 +1074,13 @@ function renderBranchingForm(id, d, classes) {
       <input type="hidden" id="f-type" value="branching"/>
 
       <label class="field-label">Title *</label>
-      <input id="f-title" class="field-input" value="${escapeHTML(d.title||'')}" placeholder="e.g. Parables of Jesus — Choose Your Story"/>
+      <input id="f-title" class="field-input" value="${escapeHTML(d.title || '')}" placeholder="e.g. Parables of Jesus — Choose Your Story"/>
 
       <label class="field-label">Subject Tag</label>
-      <input id="f-subject" class="field-input" value="${escapeHTML(d.subject||'')}" placeholder="e.g. Religious Studies"/>
+      <input id="f-subject" class="field-input" value="${escapeHTML(d.subject || '')}" placeholder="e.g. Religious Studies"/>
 
       <label class="field-label">Intro for Students (optional)</label>
-      <textarea id="f-intro" class="field-textarea" rows="3" placeholder="Brief intro shown to students before they pick a story…">${escapeHTML(d.intro||'')}</textarea>
+      <textarea id="f-intro" class="field-textarea" rows="3" placeholder="Brief intro shown to students before they pick a story…">${escapeHTML(d.intro || '')}</textarea>
 
       <label class="field-label">Default AI Tutor Instructions</label>
       <p class="field-hint" style="margin-bottom:10px">Used unless a story or branch overrides it.</p>
@@ -1087,117 +1088,152 @@ function renderBranchingForm(id, d, classes) {
       <div id="prompt-l2"></div>
       <div id="prompt-l3"></div>
 
-      <!-- ── STORIES ── -->
+      <!-- ── GLOBAL BRANCH POOL (templates to connect to stories) ── -->
+      <div class="branch-section">
+        <div class="branch-section-header">
+          <h3>🔍 "Learn More" Branch Templates</h3>
+          <button class="btn btn-ghost" onclick="addBranch()">+ Add Branch Template</button>
+        </div>
+        <p class="field-hint" style="margin-bottom:12px">Create branch templates here, then connect them to specific stories below. Examples: biblical context, historical context, common misreadings.</p>
+        <div id="branches-container">
+          ${branches.map((b, i) => branchBlock(i, b)).join("")}
+        </div>
+      </div>
+
+      <!-- ── STORIES (with branch connections) ── -->
       <div class="branch-section">
         <div class="branch-section-header">
           <h3>📚 Stories</h3>
           <button class="btn btn-ghost" onclick="addStory()">+ Add Story</button>
         </div>
         <div id="stories-container">
-          ${stories.map((s,i)=>storyBlock(i,s)).join("")}
+          ${stories.map((s, i) => storyBlock(i, s, branches)).join("")}
         </div>
         <div class="field-row mt-md">
           <div>
             <label class="field-label" style="margin-top:0">Students must complete</label>
             <select id="f-required-stories" class="field-select">
-              ${[1,2,3,4,5,6,7,8].map(n=>`<option value="${n}" ${n==reqStories?'selected':''}>${n} stor${n===1?'y':'ies'}</option>`).join("")}
+              ${[1, 2, 3, 4, 5, 6, 7, 8].map(n => `<option value="${n}" ${n == reqStories ? 'selected' : ''}>${n} stor${n === 1 ? 'y' : 'ies'}</option>`).join("")}
             </select>
           </div>
-        </div>
-      </div>
-
-      <!-- ── LEARN MORE BRANCHES ── -->
-      <div class="branch-section">
-        <div class="branch-section-header">
-          <h3>🔍 "Learn More" Branches</h3>
-          <button class="btn btn-ghost" onclick="addBranch()">+ Add Branch</button>
-        </div>
-        <p class="field-hint" style="margin-bottom:12px">After each story, students choose from these. Examples: biblical context, historical context, common misreadings.</p>
-        <div id="branches-container">
-          ${branches.map((b,i)=>branchBlock(i,b)).join("")}
-        </div>
-        <div class="field-row mt-md">
           <div>
-            <label class="field-label" style="margin-top:0">Students must complete</label>
+            <label class="field-label" style="margin-top:0">Branches required per story</label>
             <select id="f-required-branches" class="field-select">
-              ${[0,1,2,3,4,5,6].map(n=>`<option value="${n}" ${n==reqBranches?'selected':''}>${n===0?'No branches required':`${n} branch${n>1?'es':''}`}</option>`).join("")}
+              ${[0, 1, 2, 3, 4, 5, 6].map(n => `<option value="${n}" ${n == reqBranches ? 'selected' : ''}>${n === 0 ? 'No branches required' : `${n} branch${n > 1 ? 'es' : ''}`}</option>`).join("")}
             </select>
-            <p class="field-hint">Per story they finish.</p>
           </div>
         </div>
       </div>
 
       <label class="field-label">Post to Google Classroom Classes</label>
-      ${renderClassCheckboxes(classes, d.classIds||[])}
+      ${renderClassCheckboxes(classes, d.classIds || [])}
 
       <div class="form-actions">
         <button class="btn btn-secondary" onclick="renderTeacherHome()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveBranching('${id||""}')">${id ? "Save Changes" : "Publish"}</button>
+        <button class="btn btn-primary" onclick="saveBranching('${id || ""}')">${id ? "Save Changes" : "Publish"}</button>
       </div>
     </div>`;
 
   const promptCfg = d.promptCfg || {};
   renderPromptLayerSelector("prompt-l1", "layer1", false, promptCfg.layer1);
-  renderPromptLayerSelector("prompt-l2", "layer2", true,  promptCfg.layer2 || []);
+  renderPromptLayerSelector("prompt-l2", "layer2", true, promptCfg.layer2 || []);
   renderPromptLayerSelector("prompt-l3", "layer3", false, promptCfg.layer3);
 }
 
-function emptyStory(i)  { return { id:`s${Date.now()}_${i}`, title:"", imageUrl:"", passage:"", instructions:"", questions:[{text:"",maxRounds:5}] }; }
-function emptyBranch(i) { return { id:`b${Date.now()}_${i}`, title:"", description:"", passage:"", instructions:"", questions:[{text:"",maxRounds:5}] }; }
+function emptyStory(i) {
+  return {
+    id: `s${Date.now()}_${i}`,
+    title: "",
+    imageUrl: "",
+    passage: "",
+    instructions: "",
+    connectedBranchIds: [],
+    questions: [{ text: "", maxRounds: 5 }]
+  };
+}
 
-function storyBlock(idx, s) {
-  return `<details class="story-block" id="story-${idx}" data-id="${s.id||`s${Date.now()}_${idx}`}" open>
+function emptyBranch(i) {
+  return {
+    id: `b${Date.now()}_${i}`,
+    title: "",
+    description: "",
+    passage: "",
+    instructions: "",
+    questions: [{ text: "", maxRounds: 5 }]
+  };
+}
+
+function storyBlock(idx, s, allBranches = []) {
+  const connectedIds = s.connectedBranchIds || [];
+  // Build checkboxes for connecting branches to this story
+  const branchConnectHTML = allBranches.length === 0
+    ? `<p style="color:var(--ink3);font-size:.85rem;font-style:italic">Add branch templates above first, then connect them here.</p>`
+    : `<div class="class-checkboxes" style="margin-top:8px">
+        ${allBranches.map(b => {
+          const isConnected = connectedIds.includes(b.id);
+          return `<label class="class-checkbox" style="padding:8px 12px">
+            <input type="checkbox" class="s-branch-conn" value="${b.id}" ${isConnected ? 'checked' : ''} data-story-idx="${idx}"/>
+            <label>${escapeHTML(b.title)}${b.description ? ` <span style="color:var(--ink3);font-size:.8rem">— ${escapeHTML(b.description)}</span>` : ''}</label>
+          </label>`;
+        }).join("")}
+       </div>`;
+
+  return `<details class="story-block" id="story-${idx}" data-id="${s.id || `s${Date.now()}_${idx}`}" open>
     <summary>
-      <span class="summary-content">📖 <span class="story-title-preview">Story ${idx+1}${s.title?": "+escapeHTML(s.title):""}</span></span>
+      <span class="summary-content">📖 <span class="story-title-preview">Story ${idx + 1}${s.title ? ": " + escapeHTML(s.title) : ""}</span></span>
       <span class="summary-actions"><button class="btn-icon" onclick="event.stopPropagation();removeStory(${idx})" title="Remove">✕</button></span>
     </summary>
     <div style="margin-top:12px">
       <label class="field-label" style="margin-top:8px">Story Title *</label>
-      <input class="field-input s-title" value="${escapeHTML(s.title||'')}" placeholder="e.g. The Prodigal Son" oninput="updateStoryTitle(${idx},this.value)"/>
+      <input class="field-input s-title" value="${escapeHTML(s.title || '')}" placeholder="e.g. The Prodigal Son" oninput="updateStoryTitle(${idx}, this.value)"/>
 
       <label class="field-label">Image URL (Google Drive share link, Wikipedia, etc.)</label>
-      <input class="field-input s-image" value="${escapeHTML(s.imageUrl||'')}" placeholder="https://drive.google.com/file/d/.../view"/>
+      <input class="field-input s-image" value="${escapeHTML(s.imageUrl || '')}" placeholder="https://drive.google.com/file/d/.../view"/>
       <p class="field-hint">Paste any public image URL. For Google Drive: right-click image in Drive → Share → Anyone with link → copy URL.</p>
 
       <label class="field-label">Passage *</label>
-      <textarea class="field-textarea s-passage" rows="6" placeholder="Paste the story or passage…">${escapeHTML(s.passage||'')}</textarea>
+      <textarea class="field-textarea s-passage" rows="6" placeholder="Paste the story or passage…">${escapeHTML(s.passage || '')}</textarea>
 
       <label class="field-label">Questions</label>
       <div class="s-questions">
-        ${(s.questions||[{text:"",maxRounds:5}]).map((q,qi)=>qRow("s",idx,qi,q.text,q.maxRounds)).join("")}
+        ${(s.questions || [{ text: "", maxRounds: 5 }]).map((q, qi) => qRow("s", idx, qi, q.text, q.maxRounds)).join("")}
       </div>
-      <button class="btn btn-ghost mt-sm" onclick="addQ('s',${idx})">+ Add Question</button>
+      <button class="btn btn-ghost mt-sm" onclick="addQ('s', ${idx})">+ Add Question</button>
+
+      <label class="field-label">Connected "Learn More" Branches</label>
+      <p class="field-hint">Students will only see these branches after completing this story.</p>
+      ${branchConnectHTML}
 
       <label class="field-label">AI Override (optional)</label>
-      <textarea class="field-textarea s-instructions" rows="3" placeholder="Leave blank to use default AI instructions">${escapeHTML(s.instructions||'')}</textarea>
+      <textarea class="field-textarea s-instructions" rows="3" placeholder="Leave blank to use default AI instructions">${escapeHTML(s.instructions || '')}</textarea>
     </div>
   </details>`;
 }
 
 function branchBlock(idx, b) {
-  return `<details class="learnmore-block" id="branch-${idx}" data-id="${b.id||`b${Date.now()}_${idx}`}" open>
+  return `<details class="learnmore-block" id="branch-${idx}" data-id="${b.id || `b${Date.now()}_${idx}`}" open>
     <summary>
-      <span class="summary-content">🔍 <span class="branch-title-preview">Branch ${idx+1}${b.title?": "+escapeHTML(b.title):""}</span></span>
+      <span class="summary-content">🔍 <span class="branch-title-preview">Branch ${idx + 1}${b.title ? ": " + escapeHTML(b.title) : ""}</span></span>
       <span class="summary-actions"><button class="btn-icon" onclick="event.stopPropagation();removeBranch(${idx})" title="Remove">✕</button></span>
     </summary>
     <div style="margin-top:12px">
       <label class="field-label" style="margin-top:8px">Title *</label>
-      <input class="field-input b-title" value="${escapeHTML(b.title||'')}" placeholder="e.g. Cultural Context: Honor and Shame" oninput="updateBranchTitle(${idx},this.value)"/>
+      <input class="field-input b-title" value="${escapeHTML(b.title || '')}" placeholder="e.g. Cultural Context: Honor and Shame" oninput="updateBranchTitle(${idx}, this.value)"/>
 
       <label class="field-label">Short Description</label>
-      <input class="field-input b-desc" value="${escapeHTML(b.description||'')}" placeholder="One line shown to students on the branch picker"/>
+      <input class="field-input b-desc" value="${escapeHTML(b.description || '')}" placeholder="One line shown to students on the branch picker"/>
 
       <label class="field-label">Passage / Reading *</label>
-      <textarea class="field-textarea b-passage" rows="6" placeholder="The text they'll read for this branch…">${escapeHTML(b.passage||'')}</textarea>
+      <textarea class="field-textarea b-passage" rows="6" placeholder="The text they'll read for this branch…">${escapeHTML(b.passage || '')}</textarea>
 
       <label class="field-label">Questions</label>
       <div class="b-questions">
-        ${(b.questions||[{text:"",maxRounds:5}]).map((q,qi)=>qRow("b",idx,qi,q.text,q.maxRounds)).join("")}
+        ${(b.questions || [{ text: "", maxRounds: 5 }]).map((q, qi) => qRow("b", idx, qi, q.text, q.maxRounds)).join("")}
       </div>
-      <button class="btn btn-ghost mt-sm" onclick="addQ('b',${idx})">+ Add Question</button>
+      <button class="btn btn-ghost mt-sm" onclick="addQ('b', ${idx})">+ Add Question</button>
 
       <label class="field-label">AI Override (optional)</label>
-      <textarea class="field-textarea b-instructions" rows="3" placeholder="Leave blank to use default AI instructions">${escapeHTML(b.instructions||'')}</textarea>
+      <textarea class="field-textarea b-instructions" rows="3" placeholder="Leave blank to use default AI instructions">${escapeHTML(b.instructions || '')}</textarea>
     </div>
   </details>`;
 }
@@ -1215,7 +1251,9 @@ function qRow(prefix, parentIdx, qi, text="", rounds=5) {
 window.addStory = () => {
   const c = $("stories-container");
   const i = c.children.length;
-  c.insertAdjacentHTML("beforeend", storyBlock(i, emptyStory(i)));
+  // Get current branches for connection checkboxes
+  const currentBranches = readBranchesFromDOM();
+  c.insertAdjacentHTML("beforeend", storyBlock(i, emptyStory(i), currentBranches));
 };
 window.removeStory = (i) => {
   if (!confirm("Remove this story?")) return;
@@ -1235,12 +1273,77 @@ window.addBranch = () => {
 window.removeBranch = (i) => {
   if (!confirm("Remove this branch?")) return;
   const el = $(`branch-${i}`); if (el) el.remove();
+  // Refresh all story connection checkboxes since branch list changed
+  refreshStoryBranchConnections();
 };
 window.updateBranchTitle = (i, val) => {
   const block = $(`branch-${i}`); if (!block) return;
   const preview = block.querySelector(".branch-title-preview");
   if (preview) preview.textContent = `Branch ${i+1}${val?": "+val:""}`;
+  // Also refresh story connection labels
+  refreshStoryBranchConnections();
 };
+
+// Read current branches from DOM for connection updates
+function readBranchesFromDOM() {
+  const branches = [];
+  document.querySelectorAll(".learnmore-block").forEach((blk) => {
+    const bTitle = blk.querySelector(".b-title").value.trim();
+    const bDesc = blk.querySelector(".b-desc").value.trim();
+    const bPass = blk.querySelector(".b-passage").value.trim();
+    const bInstr = blk.querySelector(".b-instructions").value.trim();
+    if (!bTitle && !bPass) return;
+    const qs = [];
+    blk.querySelectorAll(".b-questions .question-row").forEach(row => {
+      const t = row.querySelector(".qx").value.trim();
+      if (t) qs.push({ text: t, maxRounds: parseInt(row.querySelector(".qrx").value, 10) || 5 });
+    });
+    branches.push({
+      id: blk.dataset.id || `b${Date.now()}_${branches.length}`,
+      title: bTitle, description: bDesc, passage: bPass, instructions: bInstr, questions: qs
+    });
+  });
+  return branches;
+}
+
+// Refresh branch connection checkboxes in all stories when branches change
+function refreshStoryBranchConnections() {
+  const currentBranches = readBranchesFromDOM();
+  document.querySelectorAll(".story-block").forEach((blk, idx) => {
+    // Preserve currently selected connections
+    const currentConnected = Array.from(blk.querySelectorAll(".s-branch-conn:checked")).map(cb => cb.value);
+    const s = {
+      id: blk.dataset.id,
+      title: blk.querySelector(".s-title").value,
+      imageUrl: blk.querySelector(".s-image").value,
+      passage: blk.querySelector(".s-passage").value,
+      instructions: blk.querySelector(".s-instructions").value,
+      connectedBranchIds: currentConnected,
+      questions: [] // not needed for refresh
+    };
+    // Rebuild only the connection section
+    const connLabel = blk.querySelector('label:nth-of-type(6)');
+    const connHint = blk.querySelector('label:nth-of-type(6) + .field-hint');
+    const oldConnDiv = connHint.nextElementSibling;
+
+    const connectedIds = s.connectedBranchIds || [];
+    const branchConnectHTML = currentBranches.length === 0
+      ? `<p style="color:var(--ink3);font-size:.85rem;font-style:italic">Add branch templates above first, then connect them here.</p>`
+      : `<div class="class-checkboxes" style="margin-top:8px">
+          ${currentBranches.map(b => {
+            const isConnected = connectedIds.includes(b.id);
+            return `<label class="class-checkbox" style="padding:8px 12px">
+              <input type="checkbox" class="s-branch-conn" value="${b.id}" ${isConnected ? 'checked' : ''} data-story-idx="${idx}"/>
+              <label>${escapeHTML(b.title)}${b.description ? ` <span style="color:var(--ink3);font-size:.8rem">— ${escapeHTML(b.description)}</span>` : ''}</label>
+            </label>`;
+          }).join("")}
+         </div>`;
+
+    if (oldConnDiv && oldConnDiv.classList.contains('class-checkboxes')) {
+      oldConnDiv.outerHTML = branchConnectHTML;
+    }
+  });
+}
 
 window.addQ = (prefix, parentIdx) => {
   const parentSel = prefix === "s" ? `#story-${parentIdx} .s-questions` : `#branch-${parentIdx} .b-questions`;
@@ -1256,51 +1359,69 @@ window.saveBranching = async (existingId) => {
   const title = $("f-title").value.trim();
   if (!title) { toast("Title required.", true); return; }
 
-  // Read all stories
-  const stories = [];
-  document.querySelectorAll(".story-block").forEach((blk) => {
-    const sTitle   = blk.querySelector(".s-title").value.trim();
-    const sImage   = blk.querySelector(".s-image").value.trim();
-    const sPass    = blk.querySelector(".s-passage").value.trim();
-    const sInstr   = blk.querySelector(".s-instructions").value.trim();
-    if (!sTitle && !sPass) return; // skip empty
-    const qs = [];
-    blk.querySelectorAll(".s-questions .question-row").forEach(row => {
-      const t = row.querySelector(".qx").value.trim();
-      if (t) qs.push({ text:t, maxRounds:parseInt(row.querySelector(".qrx").value,10)||5 });
-    });
-    stories.push({
-      id: blk.dataset.id || `s${Date.now()}_${stories.length}`,
-      title:sTitle, imageUrl:sImage, passage:sPass, instructions:sInstr, questions:qs
-    });
-  });
-
-  // Read all branches
+  // Read all branch templates first (these are global)
   const branches = [];
   document.querySelectorAll(".learnmore-block").forEach((blk) => {
     const bTitle = blk.querySelector(".b-title").value.trim();
-    const bDesc  = blk.querySelector(".b-desc").value.trim();
-    const bPass  = blk.querySelector(".b-passage").value.trim();
+    const bDesc = blk.querySelector(".b-desc").value.trim();
+    const bPass = blk.querySelector(".b-passage").value.trim();
     const bInstr = blk.querySelector(".b-instructions").value.trim();
     if (!bTitle && !bPass) return;
     const qs = [];
     blk.querySelectorAll(".b-questions .question-row").forEach(row => {
       const t = row.querySelector(".qx").value.trim();
-      if (t) qs.push({ text:t, maxRounds:parseInt(row.querySelector(".qrx").value,10)||5 });
+      if (t) qs.push({ text: t, maxRounds: parseInt(row.querySelector(".qrx").value, 10) || 5 });
     });
     branches.push({
       id: blk.dataset.id || `b${Date.now()}_${branches.length}`,
-      title:bTitle, description:bDesc, passage:bPass, instructions:bInstr, questions:qs
+      title: bTitle, description: bDesc, passage: bPass, instructions: bInstr, questions: qs
+    });
+  });
+
+  // Read all stories with their connected branch IDs
+  const stories = [];
+  document.querySelectorAll(".story-block").forEach((blk) => {
+    const sTitle = blk.querySelector(".s-title").value.trim();
+    const sImage = blk.querySelector(".s-image").value.trim();
+    const sPass = blk.querySelector(".s-passage").value.trim();
+    const sInstr = blk.querySelector(".s-instructions").value.trim();
+    if (!sTitle && !sPass) return;
+
+    // Read which branches are connected to this story
+    const connectedBranchIds = Array.from(
+      blk.querySelectorAll(".s-branch-conn:checked")
+    ).map(cb => cb.value);
+
+    const qs = [];
+    blk.querySelectorAll(".s-questions .question-row").forEach(row => {
+      const t = row.querySelector(".qx").value.trim();
+      if (t) qs.push({ text: t, maxRounds: parseInt(row.querySelector(".qrx").value, 10) || 5 });
+    });
+
+    stories.push({
+      id: blk.dataset.id || `s${Date.now()}_${stories.length}`,
+      title: sTitle, imageUrl: sImage, passage: sPass, instructions: sInstr,
+      connectedBranchIds, // <-- KEY: which branches belong to this story
+      questions: qs
     });
   });
 
   if (!stories.length) { toast("Add at least one story.", true); return; }
 
-  const reqStories  = parseInt($("f-required-stories").value,10) || 1;
-  const reqBranches = parseInt($("f-required-branches").value,10) || 0;
+  const reqStories = parseInt($("f-required-stories").value, 10) || 1;
+  const reqBranches = parseInt($("f-required-branches").value, 10) || 0;
 
   if (reqStories > stories.length) { toast(`You require ${reqStories} stories but only have ${stories.length}.`, true); return; }
-  if (reqBranches > branches.length) { toast(`You require ${reqBranches} branches but only have ${branches.length}.`, true); return; }
+
+  // Validate: if branches are required, each story must have at least that many connected
+  if (reqBranches > 0) {
+    for (const s of stories) {
+      if ((s.connectedBranchIds || []).length < reqBranches) {
+        toast(`"${s.title}" needs at least ${reqBranches} connected branches (has ${(s.connectedBranchIds || []).length}).`, true);
+        return;
+      }
+    }
+  }
 
   // Read prompt-layer selections and resolve to combined instruction text
   const l1sel = document.getElementById("prompt-l1-select");
@@ -1308,7 +1429,7 @@ window.saveBranching = async (existingId) => {
   const l3sel = document.getElementById("prompt-l3-select");
   const promptCfg = {
     layer1: l1sel?.value || "",
-    layer2: l2checks ? Array.from(l2checks.querySelectorAll("input:checked")).map(c=>c.value) : [],
+    layer2: l2checks ? Array.from(l2checks.querySelectorAll("input:checked")).map(c => c.value) : [],
     layer3: l3sel?.value || ""
   };
   const resolvedInstructions = [
@@ -1319,18 +1440,18 @@ window.saveBranching = async (existingId) => {
 
   const { classIds, classNames } = readClassChecks();
   const payload = {
-    type:"branching", title,
-    subject:        $("f-subject").value.trim(),
-    intro:          $("f-intro").value.trim(),
+    type: "branching", title,
+    subject: $("f-subject").value.trim(),
+    intro: $("f-intro").value.trim(),
     promptCfg,
-    instructions:   resolvedInstructions,
-    stories, branches,
-    requiredStories:  reqStories,
+    instructions: resolvedInstructions,
+    stories, branches, // branches still saved as templates for reference
+    requiredStories: reqStories,
     requiredBranches: reqBranches,
     classIds, classNames,
-    teacherId:   user.uid,
+    teacherId: user.uid,
     teacherName: user.displayName,
-    updatedAt:   serverTimestamp()
+    updatedAt: serverTimestamp()
   };
   await commonSaveAndPost(existingId, payload);
 };
@@ -1729,7 +1850,7 @@ function renderStoryQuestion() {
   if (qIndex >= total) {
     // Story finished — check whether branches should follow
     const requiredBr = curAssignment.requiredBranches || 0;
-    const availableBr = (curAssignment.branches||[]).length;
+    const availableBr = (story.connectedBranchIds || []).length;
     if (requiredBr > 0 && availableBr > 0) {
       renderBranchPicker();
     } else {
@@ -1785,12 +1906,21 @@ window.nextStoryQuestion = () => {
 function renderBranchPicker() {
   journey.phase = "branch-pick";
   const a = curAssignment;
+  const currentStory = a.stories.find(s => s.id === journey.currentStoryId);
+
+  // ONLY show branches connected to this story
+  const availableBranches = (a.branches || []).filter(b =>
+    (currentStory?.connectedBranchIds || []).includes(b.id)
+  );
+
   const requiredBr = a.requiredBranches || 0;
-  const doneCount  = journey.branchesCompletedThisStory;
-  const remaining  = requiredBr - doneCount;
+  const doneCount = journey.branchesCompletedThisStory;
+  const remaining = requiredBr - doneCount;
 
   let msg = "";
-  if (doneCount === 0) {
+  if (availableBranches.length === 0) {
+    msg = `No extra learning paths for this story.`;
+  } else if (doneCount === 0) {
     msg = `Now choose what you'd like to <strong>learn more about</strong>. Complete <strong>${requiredBr}</strong> to continue.`;
   } else if (remaining > 0) {
     msg = `Nice! <strong>${doneCount} of ${requiredBr}</strong> done. Pick another.`;
@@ -1801,13 +1931,13 @@ function renderBranchPicker() {
   // Track which branches the student has done globally so they don't re-do
   const branchesDoneSet = new Set(journey.branchesCompleted);
 
-  const branchHTML = a.branches.map(b => {
+  const branchHTML = availableBranches.map(b => {
     const done = branchesDoneSet.has(b.id);
     return `
-      <div class="branch-picker-card ${done?'completed':''}" onclick="${done?'':`pickBranch('${b.id}')`}">
+      <div class="branch-picker-card ${done ? 'completed' : ''}" onclick="${done ? '' : `pickBranch('${b.id}')`}">
         <div class="branch-icon">🔍</div>
         <div class="branch-body">
-          <p class="branch-title">${escapeHTML(b.title)}${done?' ✓':''}</p>
+          <p class="branch-title">${escapeHTML(b.title)}${done ? ' ✓' : ''}</p>
           ${b.description ? `<p class="branch-desc">${escapeHTML(b.description)}</p>` : ""}
         </div>
       </div>`;
@@ -1816,14 +1946,14 @@ function renderBranchPicker() {
   mc().innerHTML = `
     <div class="assignment-view">
       <button class="back-btn" onclick="renderStoryPicker()">← Back to Stories</button>
-      <h2 style="font-family:'Lora',serif;margin-bottom:4px">Learn More</h2>
+      <h2 style="font-family:'Lora',serif;margin-bottom:4px">Learn More: ${escapeHTML(currentStory?.title || "")}</h2>
       <div class="journey-progress">${msg}</div>
-      ${remaining <= 0
+      ${remaining <= 0 || availableBranches.length === 0
         ? `<div style="text-align:center;margin:24px 0">
              <button class="btn btn-primary" onclick="finishStory()">Finish This Story →</button>
            </div>`
         : ""}
-      ${branchHTML}
+      ${availableBranches.length > 0 ? branchHTML : ""}
     </div>`;
 }
 
