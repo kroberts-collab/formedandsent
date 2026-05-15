@@ -1764,16 +1764,15 @@ function renderStoryQuestion() {
   const total = story.questions.length;
 
   if (qIndex >= total) {
-    // Story finished — check whether branches should follow
-    const requiredBr = curAssignment.requiredBranches || 0;
+    // Story finished — show branch picker if this story has any branches
     const availableBr = (story.branches || []).length;
-    if (requiredBr > 0 && availableBr > 0) {
+    if (availableBr > 0) {
       renderBranchPicker();
     } else {
       finishStory();
     }
     return;
-  }
+}
 
   followUpRound = 0;
   const q = story.questions[qIndex];
@@ -1832,15 +1831,22 @@ function renderBranchPicker() {
   const remaining = requiredBr - doneCount;
 
   let msg = "";
-  if (availableBranches.length === 0) {
+const branchesOptional = requiredBr === 0;
+if (availableBranches.length === 0) {
     msg = `No extra learning paths for this story.`;
-  } else if (doneCount === 0) {
+} else if (branchesOptional) {
+    if (doneCount === 0) {
+      msg = `Nice work finishing the story! You can <strong>optionally</strong> explore one or more "Learn More" branches below, or finish this story now.`;
+    } else {
+      msg = `You've explored <strong>${doneCount}</strong> branch${doneCount>1?'es':''}. Pick another or finish this story.`;
+    }
+} else if (doneCount === 0) {
     msg = `Now choose what you'd like to <strong>learn more about</strong>. Complete <strong>${requiredBr}</strong> to continue.`;
-  } else if (remaining > 0) {
+} else if (remaining > 0) {
     msg = `Nice! <strong>${doneCount} of ${requiredBr}</strong> done. Pick another.`;
-  } else {
-    msg = `All branches complete for this story! 🎉`;
-  }
+} else {
+    msg = `All required branches complete! 🎉`;
+}
 
   // Track which branches the student has done globally so they don't re-do
   const branchesDoneSet = new Set(journey.branchesCompleted);
@@ -1862,11 +1868,13 @@ function renderBranchPicker() {
       <button class="back-btn" onclick="renderStoryPicker()">← Back to Stories</button>
       <h2 style="font-family:'Lora',serif;margin-bottom:4px">Learn More: ${escapeHTML(currentStory?.title || "")}</h2>
       <div class="journey-progress">${msg}</div>
-      ${remaining <= 0 || availableBranches.length === 0
-        ? `<div style="text-align:center;margin:24px 0">
-             <button class="btn btn-primary" onclick="finishStory()">Finish This Story →</button>
-           </div>`
-        : ""}
+      ${branchesOptional || remaining <= 0 || availableBranches.length === 0
+    ? `<div style="text-align:center;margin:24px 0">
+         <button class="btn ${remaining<=0||availableBranches.length===0?'btn-primary':'btn-secondary'}" onclick="finishStory()">
+           ${remaining<=0||availableBranches.length===0?'Finish This Story →':'Skip Branches & Finish Story'}
+         </button>
+       </div>`
+    : ""}
       ${availableBranches.length > 0 ? branchHTML : ""}
     </div>`;
 }
