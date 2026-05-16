@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>formedandsent</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+<title>FormedAndSent</title>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
 <style>
   :root {
@@ -161,19 +159,6 @@
   .story-block[open] summary::before,.learnmore-block[open] summary::before { transform:rotate(90deg); }
   .summary-content { flex:1; display:flex; align-items:center; gap:8px; }
   .summary-actions { display:flex; gap:6px; }
-
-  /* Nested branches inside story */
-  .nested-branches {
-    background:#f5f3ee; border:1.5px dashed var(--border); border-radius:var(--radius);
-    padding:16px 20px; margin-top:16px;
-  }
-  .nested-branches-header {
-    display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;
-  }
-  .nested-branches-header h4 { font-size:.95rem; color:var(--accent); font-family:'Lora',serif; }
-  .add-branch-inline {
-    font-size:.85rem; padding:6px 14px;
-  }
 
   /* Student assignment cards */
   .assignment-view { max-width:720px; }
@@ -367,7 +352,7 @@
 <div id="landing">
   <div class="landing-card">
     <div class="logo-mark">📖</div>
-    <h1>formedandsent</h1>
+    <h1>FormedAndSent</h1>
     <p class="landing-tagline">AI-powered reading assignments with personalised Socratic feedback for every student.</p>
     <hr class="divider"/>
     <button class="btn btn-google" onclick="signIn()">
@@ -380,7 +365,7 @@
 
 <div id="app">
   <header class="topbar">
-    <span class="topbar-logo">📖 formedandsent</span>
+    <span class="topbar-logo">📖 FormedAndSent</span>
     <span class="topbar-spacer"></span>
     <span class="topbar-role" id="topbar-role">Student</span>
     <div class="user-pill">
@@ -427,20 +412,25 @@ const fbApp = initializeApp(FIREBASE_CONFIG);
 const auth  = getAuth(fbApp);
 const db    = getFirestore(fbApp);
 const gp = new GoogleAuthProvider();
+// Only request basic profile + email at sign-in.
+// Classroom scopes are requested later for teachers only, via incremental auth.
 gp.setCustomParameters({ prompt: "select_account" });
 
+// Separate provider for teachers when they need Classroom access
 const gpTeacher = new GoogleAuthProvider();
 gpTeacher.addScope("https://www.googleapis.com/auth/classroom.coursework.students");
 gpTeacher.addScope("https://www.googleapis.com/auth/classroom.courses.readonly");
 
 let user=null, role=null, gToken=null;
 let curAssignment=null;
-let session=[];
-let qIndex=0;
+let session=[];               // global flat session list (for save)
+let qIndex=0;                 // index within current question list
 let followUpRound=0;
-let MAX_ROUNDS_FOR_Q=5;
+let MAX_ROUNDS_FOR_Q=5;       // dynamic per question
 
-let journey={};
+// Branching state
+let journey={};               // { storiesCompleted:[id], branchesCompleted:[id], currentStoryId, currentBranchId, phase }
+// phase: "story-pick" | "story-questions" | "branch-pick" | "branch-questions" | "complete"
 
 const $  = id => document.getElementById(id);
 const mc = () => $("main-content");
@@ -454,9 +444,11 @@ function toast(msg, isError=false) {
 
 function escapeHTML(s) { return (s||"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
 
+// Convert a Google Drive share URL to a viewable image URL
 function normaliseImageURL(url) {
   if (!url) return "";
   url = url.trim();
+  // Google Drive share link → direct view link
   const m = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/);
   if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
   return url;
@@ -820,7 +812,8 @@ async function resolvePromptSelection(layer, value) {
 window.signIn = async () => {
   try {
     const result = await signInWithPopup(auth, gp);
-    gToken = null;
+// gToken stays null for students; we only request it for teachers when they need Classroom
+gToken = null;
   } catch(e) { toast(e.message, true); }
 };
 window.signOutUser = async () => { await signOut(auth); };
@@ -896,11 +889,8 @@ async function renderTeacherHome() {
   snp.forEach(d => {
     const a = d.data();
     const isBranching = a.type === "branching";
-    const branchCount = isBranching
-      ? (a.stories || []).reduce((sum, s) => sum + (s.branches || []).length, 0)
-      : 0;
     const summary = isBranching
-      ? `${(a.stories||[]).length} stories · ${branchCount} branches total`
+      ? `${(a.stories||[]).length} stories · ${(a.branches||[]).length} learn-more options`
       : `${(a.questions||[]).length} questions`;
     grid.innerHTML += `
       <div class="card">
@@ -921,6 +911,9 @@ async function renderTeacherHome() {
   });
 }
 
+/* ═══════════════════════════════════════════════
+   TEACHER — TYPE PICKER (linear vs branching)
+═══════════════════════════════════════════════ */
 window.renderTypePicker = () => {
   mc().innerHTML = `
     <button class="back-btn" onclick="renderTeacherHome()">← Back</button>
@@ -938,6 +931,9 @@ window.renderTypePicker = () => {
     </div>`;
 };
 
+/* ═══════════════════════════════════════════════
+   TEACHER — CREATE / EDIT (delegates by type)
+═══════════════════════════════════════════════ */
 async function renderCreateAssignment(id, data, type) {
   const d = data || {};
   type = type || d.type || "linear";
@@ -946,8 +942,12 @@ async function renderCreateAssignment(id, data, type) {
   return renderLinearForm(id, d, classes);
 }
 
+/* ────────────────────────────────────────────
+   LINEAR FORM
+──────────────────────────────────────────── */
 function renderLinearForm(id, d, classes) {
   const questions = d.questions || [{ text:"", maxRounds:5 }];
+  // Migrate old format (array of strings) → new format
   const normalized = questions.map(q => typeof q === "string" ? { text:q, maxRounds:5 } : q);
 
   mc().innerHTML = `
@@ -988,6 +988,7 @@ function renderLinearForm(id, d, classes) {
       </div>
     </div>`;
 
+  // Render prompt layer selectors
   const promptCfg = d.promptCfg || {};
   renderPromptLayerSelector("prompt-l1", "layer1", false, promptCfg.layer1);
   renderPromptLayerSelector("prompt-l2", "layer2", true,  promptCfg.layer2 || []);
@@ -1024,6 +1025,7 @@ window.saveLinear = async (existingId) => {
   });
   if (!qs.length) { toast("Add at least one question.", true); return; }
 
+  // Read prompt-layer selections and resolve to combined instruction text
   const l1sel = document.getElementById("prompt-l1-select");
   const l2checks = document.getElementById("prompt-l2-checks");
   const l3sel = document.getElementById("prompt-l3-select");
@@ -1054,29 +1056,30 @@ window.saveLinear = async (existingId) => {
 };
 
 /* ────────────────────────────────────────────
-   BRANCHING FORM — branches nested inside stories
+   BRANCHING FORM
 ──────────────────────────────────────────── */
 function renderBranchingForm(id, d, classes) {
-  const stories = (d.stories || []).length ? d.stories : [emptyStory(0)];
-  const reqStories = d.requiredStories ?? Math.min(1, stories.length);
-  const reqBranches = d.requiredBranches ?? 0;
+  const stories  = (d.stories  || []).length ? d.stories  : [emptyStory(0)];
+  const branches = (d.branches || []).length ? d.branches : [emptyBranch(0)];
+  const reqStories  = d.requiredStories  ?? Math.min(1, stories.length);
+  const reqBranches = d.requiredBranches ?? Math.min(1, branches.length);
 
   mc().innerHTML = `
     <div class="form-page">
       <button class="back-btn" onclick="renderTeacherHome()">← Back</button>
       <h1 class="page-title">${id ? "Edit" : "New"} Branching Assignment</h1>
-      <p class="page-sub" style="margin-bottom:8px">🌿 Multiple stories, each with their own branches</p>
+      <p class="page-sub" style="margin-bottom:8px">🌿 Multiple stories, students choose their path</p>
 
       <input type="hidden" id="f-type" value="branching"/>
 
       <label class="field-label">Title *</label>
-      <input id="f-title" class="field-input" value="${escapeHTML(d.title || '')}" placeholder="e.g. Parables of Jesus — Choose Your Story"/>
+      <input id="f-title" class="field-input" value="${escapeHTML(d.title||'')}" placeholder="e.g. Parables of Jesus — Choose Your Story"/>
 
       <label class="field-label">Subject Tag</label>
-      <input id="f-subject" class="field-input" value="${escapeHTML(d.subject || '')}" placeholder="e.g. Religious Studies"/>
+      <input id="f-subject" class="field-input" value="${escapeHTML(d.subject||'')}" placeholder="e.g. Religious Studies"/>
 
       <label class="field-label">Intro for Students (optional)</label>
-      <textarea id="f-intro" class="field-textarea" rows="3" placeholder="Brief intro shown to students before they pick a story…">${escapeHTML(d.intro || '')}</textarea>
+      <textarea id="f-intro" class="field-textarea" rows="3" placeholder="Brief intro shown to students before they pick a story…">${escapeHTML(d.intro||'')}</textarea>
 
       <label class="field-label">Default AI Tutor Instructions</label>
       <p class="field-hint" style="margin-bottom:10px">Used unless a story or branch overrides it.</p>
@@ -1084,134 +1087,117 @@ function renderBranchingForm(id, d, classes) {
       <div id="prompt-l2"></div>
       <div id="prompt-l3"></div>
 
-      <!-- ── STORIES (each with nested branches) ── -->
+      <!-- ── STORIES ── -->
       <div class="branch-section">
         <div class="branch-section-header">
           <h3>📚 Stories</h3>
           <button class="btn btn-ghost" onclick="addStory()">+ Add Story</button>
         </div>
         <div id="stories-container">
-          ${stories.map((s, i) => storyBlock(i, s)).join("")}
+          ${stories.map((s,i)=>storyBlock(i,s)).join("")}
         </div>
         <div class="field-row mt-md">
           <div>
             <label class="field-label" style="margin-top:0">Students must complete</label>
             <select id="f-required-stories" class="field-select">
-              ${[1, 2, 3, 4, 5, 6, 7, 8].map(n => `<option value="${n}" ${n == reqStories ? 'selected' : ''}>${n} stor${n === 1 ? 'y' : 'ies'}</option>`).join("")}
+              ${[1,2,3,4,5,6,7,8].map(n=>`<option value="${n}" ${n==reqStories?'selected':''}>${n} stor${n===1?'y':'ies'}</option>`).join("")}
             </select>
           </div>
+        </div>
+      </div>
+
+      <!-- ── LEARN MORE BRANCHES ── -->
+      <div class="branch-section">
+        <div class="branch-section-header">
+          <h3>🔍 "Learn More" Branches</h3>
+          <button class="btn btn-ghost" onclick="addBranch()">+ Add Branch</button>
+        </div>
+        <p class="field-hint" style="margin-bottom:12px">After each story, students choose from these. Examples: biblical context, historical context, common misreadings.</p>
+        <div id="branches-container">
+          ${branches.map((b,i)=>branchBlock(i,b)).join("")}
+        </div>
+        <div class="field-row mt-md">
           <div>
-            <label class="field-label" style="margin-top:0">Branches required per story</label>
+            <label class="field-label" style="margin-top:0">Students must complete</label>
             <select id="f-required-branches" class="field-select">
-              ${[0, 1, 2, 3, 4, 5, 6].map(n => `<option value="${n}" ${n == reqBranches ? 'selected' : ''}>${n === 0 ? 'No branches required' : `${n} branch${n > 1 ? 'es' : ''}`}</option>`).join("")}
+              ${[0,1,2,3,4,5,6].map(n=>`<option value="${n}" ${n==reqBranches?'selected':''}>${n===0?'No branches required':`${n} branch${n>1?'es':''}`}</option>`).join("")}
             </select>
+            <p class="field-hint">Per story they finish.</p>
           </div>
         </div>
       </div>
 
       <label class="field-label">Post to Google Classroom Classes</label>
-      ${renderClassCheckboxes(classes, d.classIds || [])}
+      ${renderClassCheckboxes(classes, d.classIds||[])}
 
       <div class="form-actions">
         <button class="btn btn-secondary" onclick="renderTeacherHome()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveBranching('${id || ""}')">${id ? "Save Changes" : "Publish"}</button>
+        <button class="btn btn-primary" onclick="saveBranching('${id||""}')">${id ? "Save Changes" : "Publish"}</button>
       </div>
     </div>`;
 
   const promptCfg = d.promptCfg || {};
   renderPromptLayerSelector("prompt-l1", "layer1", false, promptCfg.layer1);
-  renderPromptLayerSelector("prompt-l2", "layer2", true, promptCfg.layer2 || []);
+  renderPromptLayerSelector("prompt-l2", "layer2", true,  promptCfg.layer2 || []);
   renderPromptLayerSelector("prompt-l3", "layer3", false, promptCfg.layer3);
 }
 
-function emptyStory(i) {
-  return {
-    id: `s${Date.now()}_${i}`,
-    title: "",
-    imageUrl: "",
-    passage: "",
-    instructions: "",
-    branches: [],
-    questions: [{ text: "", maxRounds: 5 }]
-  };
-}
-
-function emptyBranch(i) {
-  return {
-    id: `b${Date.now()}_${i}`,
-    title: "",
-    description: "",
-    passage: "",
-    instructions: "",
-    questions: [{ text: "", maxRounds: 5 }]
-  };
-}
+function emptyStory(i)  { return { id:`s${Date.now()}_${i}`, title:"", imageUrl:"", passage:"", instructions:"", questions:[{text:"",maxRounds:5}] }; }
+function emptyBranch(i) { return { id:`b${Date.now()}_${i}`, title:"", description:"", passage:"", instructions:"", questions:[{text:"",maxRounds:5}] }; }
 
 function storyBlock(idx, s) {
-  const branches = s.branches || [];
-  return `<details class="story-block" id="story-${idx}" data-id="${s.id || `s${Date.now()}_${idx}`}" open>
+  return `<details class="story-block" id="story-${idx}" data-id="${s.id||`s${Date.now()}_${idx}`}" open>
     <summary>
-      <span class="summary-content">📖 <span class="story-title-preview">Story ${idx + 1}${s.title ? ": " + escapeHTML(s.title) : ""}</span></span>
+      <span class="summary-content">📖 <span class="story-title-preview">Story ${idx+1}${s.title?": "+escapeHTML(s.title):""}</span></span>
       <span class="summary-actions"><button class="btn-icon" onclick="event.stopPropagation();removeStory(${idx})" title="Remove">✕</button></span>
     </summary>
     <div style="margin-top:12px">
       <label class="field-label" style="margin-top:8px">Story Title *</label>
-      <input class="field-input s-title" value="${escapeHTML(s.title || '')}" placeholder="e.g. The Prodigal Son" oninput="updateStoryTitle(${idx}, this.value)"/>
+      <input class="field-input s-title" value="${escapeHTML(s.title||'')}" placeholder="e.g. The Prodigal Son" oninput="updateStoryTitle(${idx},this.value)"/>
 
       <label class="field-label">Image URL (Google Drive share link, Wikipedia, etc.)</label>
-      <input class="field-input s-image" value="${escapeHTML(s.imageUrl || '')}" placeholder="https://drive.google.com/file/d/.../view"/>
+      <input class="field-input s-image" value="${escapeHTML(s.imageUrl||'')}" placeholder="https://drive.google.com/file/d/.../view"/>
       <p class="field-hint">Paste any public image URL. For Google Drive: right-click image in Drive → Share → Anyone with link → copy URL.</p>
 
       <label class="field-label">Passage *</label>
-      <textarea class="field-textarea s-passage" rows="6" placeholder="Paste the story or passage…">${escapeHTML(s.passage || '')}</textarea>
+      <textarea class="field-textarea s-passage" rows="6" placeholder="Paste the story or passage…">${escapeHTML(s.passage||'')}</textarea>
 
       <label class="field-label">Questions</label>
       <div class="s-questions">
-        ${(s.questions || [{ text: "", maxRounds: 5 }]).map((q, qi) => qRow("s", idx, qi, q.text, q.maxRounds)).join("")}
+        ${(s.questions||[{text:"",maxRounds:5}]).map((q,qi)=>qRow("s",idx,qi,q.text,q.maxRounds)).join("")}
       </div>
-      <button class="btn btn-ghost mt-sm" onclick="addQ('s', ${idx})">+ Add Question</button>
-
-      <!-- NESTED BRANCHES FOR THIS STORY -->
-      <div class="nested-branches" id="nested-branches-${idx}">
-        <div class="nested-branches-header">
-          <h4>🔍 "Learn More" Branches for This Story</h4>
-          <button class="btn btn-ghost add-branch-inline" onclick="addNestedBranch(${idx})">+ Add Branch</button>
-        </div>
-        <div class="nested-branches-list" id="branches-list-${idx}">
-          ${branches.map((b, bi) => nestedBranchBlock(idx, bi, b)).join("")}
-        </div>
-      </div>
+      <button class="btn btn-ghost mt-sm" onclick="addQ('s',${idx})">+ Add Question</button>
 
       <label class="field-label">AI Override (optional)</label>
-      <textarea class="field-textarea s-instructions" rows="3" placeholder="Leave blank to use default AI instructions">${escapeHTML(s.instructions || '')}</textarea>
+      <textarea class="field-textarea s-instructions" rows="3" placeholder="Leave blank to use default AI instructions">${escapeHTML(s.instructions||'')}</textarea>
     </div>
   </details>`;
 }
 
-function nestedBranchBlock(storyIdx, branchIdx, b) {
-  return `<details class="learnmore-block" id="branch-${storyIdx}-${branchIdx}" data-id="${b.id || `b${Date.now()}_${storyIdx}_${branchIdx}`}" open>
+function branchBlock(idx, b) {
+  return `<details class="learnmore-block" id="branch-${idx}" data-id="${b.id||`b${Date.now()}_${idx}`}" open>
     <summary>
-      <span class="summary-content">🔍 <span class="branch-title-preview">Branch ${branchIdx + 1}${b.title ? ": " + escapeHTML(b.title) : ""}</span></span>
-      <span class="summary-actions"><button class="btn-icon" onclick="event.stopPropagation();removeNestedBranch(${storyIdx}, ${branchIdx})" title="Remove">✕</button></span>
+      <span class="summary-content">🔍 <span class="branch-title-preview">Branch ${idx+1}${b.title?": "+escapeHTML(b.title):""}</span></span>
+      <span class="summary-actions"><button class="btn-icon" onclick="event.stopPropagation();removeBranch(${idx})" title="Remove">✕</button></span>
     </summary>
     <div style="margin-top:12px">
       <label class="field-label" style="margin-top:8px">Title *</label>
-      <input class="field-input nb-title" value="${escapeHTML(b.title || '')}" placeholder="e.g. Cultural Context: Honor and Shame" oninput="updateNestedBranchTitle(${storyIdx}, ${branchIdx}, this.value)"/>
+      <input class="field-input b-title" value="${escapeHTML(b.title||'')}" placeholder="e.g. Cultural Context: Honor and Shame" oninput="updateBranchTitle(${idx},this.value)"/>
 
       <label class="field-label">Short Description</label>
-      <input class="field-input nb-desc" value="${escapeHTML(b.description || '')}" placeholder="One line shown to students on the branch picker"/>
+      <input class="field-input b-desc" value="${escapeHTML(b.description||'')}" placeholder="One line shown to students on the branch picker"/>
 
       <label class="field-label">Passage / Reading *</label>
-      <textarea class="field-textarea nb-passage" rows="5" placeholder="The text they'll read for this branch…">${escapeHTML(b.passage || '')}</textarea>
+      <textarea class="field-textarea b-passage" rows="6" placeholder="The text they'll read for this branch…">${escapeHTML(b.passage||'')}</textarea>
 
       <label class="field-label">Questions</label>
-      <div class="nb-questions">
-        ${(b.questions || [{ text: "", maxRounds: 5 }]).map((q, qi) => qRow("nb", `${storyIdx}-${branchIdx}`, qi, q.text, q.maxRounds)).join("")}
+      <div class="b-questions">
+        ${(b.questions||[{text:"",maxRounds:5}]).map((q,qi)=>qRow("b",idx,qi,q.text,q.maxRounds)).join("")}
       </div>
-      <button class="btn btn-ghost mt-sm" onclick="addNestedQ(${storyIdx}, ${branchIdx})">+ Add Question</button>
+      <button class="btn btn-ghost mt-sm" onclick="addQ('b',${idx})">+ Add Question</button>
 
       <label class="field-label">AI Override (optional)</label>
-      <textarea class="field-textarea nb-instructions" rows="3" placeholder="Leave blank to use default AI instructions">${escapeHTML(b.instructions || '')}</textarea>
+      <textarea class="field-textarea b-instructions" rows="3" placeholder="Leave blank to use default AI instructions">${escapeHTML(b.instructions||'')}</textarea>
     </div>
   </details>`;
 }
@@ -1222,7 +1208,7 @@ function qRow(prefix, parentIdx, qi, text="", rounds=5) {
     <span class="q-num">${qi+1}.</span>
     <input class="q-input qx" value="${escapeHTML(text)}" placeholder="Question ${qi+1}…"/>
     <select class="q-rounds qrx">${opts}</select>
-    <button class="btn-icon" onclick="removeQ('${prefix}','${parentIdx}',${qi},this)" title="Remove">✕</button>
+    <button class="btn-icon" onclick="removeQ('${prefix}',${parentIdx},${qi},this)" title="Remove">✕</button>
   </div>`;
 }
 
@@ -1232,7 +1218,7 @@ window.addStory = () => {
   c.insertAdjacentHTML("beforeend", storyBlock(i, emptyStory(i)));
 };
 window.removeStory = (i) => {
-  if (!confirm("Remove this story and all its branches?")) return;
+  if (!confirm("Remove this story?")) return;
   const el = $(`story-${i}`); if (el) el.remove();
 };
 window.updateStoryTitle = (i, val) => {
@@ -1241,36 +1227,26 @@ window.updateStoryTitle = (i, val) => {
   if (preview) preview.textContent = `Story ${i+1}${val?": "+val:""}`;
 };
 
-// Nested branch management
-window.addNestedBranch = (storyIdx) => {
-  const list = $(`branches-list-${storyIdx}`);
-  if (!list) return;
-  const branchIdx = list.children.length;
-  list.insertAdjacentHTML("beforeend", nestedBranchBlock(storyIdx, branchIdx, emptyBranch(branchIdx)));
+window.addBranch = () => {
+  const c = $("branches-container");
+  const i = c.children.length;
+  c.insertAdjacentHTML("beforeend", branchBlock(i, emptyBranch(i)));
 };
-window.removeNestedBranch = (storyIdx, branchIdx) => {
+window.removeBranch = (i) => {
   if (!confirm("Remove this branch?")) return;
-  const el = $(`branch-${storyIdx}-${branchIdx}`);
-  if (el) el.remove();
+  const el = $(`branch-${i}`); if (el) el.remove();
 };
-window.updateNestedBranchTitle = (storyIdx, branchIdx, val) => {
-  const block = $(`branch-${storyIdx}-${branchIdx}`);
-  if (!block) return;
+window.updateBranchTitle = (i, val) => {
+  const block = $(`branch-${i}`); if (!block) return;
   const preview = block.querySelector(".branch-title-preview");
-  if (preview) preview.textContent = `Branch ${branchIdx+1}${val?": "+val:""}`;
+  if (preview) preview.textContent = `Branch ${i+1}${val?": "+val:""}`;
 };
 
 window.addQ = (prefix, parentIdx) => {
-  const parentSel = prefix === "s" ? `#story-${parentIdx} .s-questions` : `#branch-${parentIdx} .nb-questions`;
+  const parentSel = prefix === "s" ? `#story-${parentIdx} .s-questions` : `#branch-${parentIdx} .b-questions`;
   const cont = document.querySelector(parentSel);
   if (!cont) return;
   cont.insertAdjacentHTML("beforeend", qRow(prefix, parentIdx, cont.children.length));
-};
-window.addNestedQ = (storyIdx, branchIdx) => {
-  const parentSel = `#branch-${storyIdx}-${branchIdx} .nb-questions`;
-  const cont = document.querySelector(parentSel);
-  if (!cont) return;
-  cont.insertAdjacentHTML("beforeend", qRow("nb", `${storyIdx}-${branchIdx}`, cont.children.length));
 };
 window.removeQ = (prefix, parentIdx, qi, btn) => {
   btn.closest(".question-row").remove();
@@ -1280,74 +1256,59 @@ window.saveBranching = async (existingId) => {
   const title = $("f-title").value.trim();
   if (!title) { toast("Title required.", true); return; }
 
-  // Read all stories with their nested branches
+  // Read all stories
   const stories = [];
   document.querySelectorAll(".story-block").forEach((blk) => {
-    const sTitle = blk.querySelector(".s-title").value.trim();
-    const sImage = blk.querySelector(".s-image").value.trim();
-    const sPass = blk.querySelector(".s-passage").value.trim();
-    const sInstr = blk.querySelector(".s-instructions").value.trim();
-    if (!sTitle && !sPass) return;
-
-    // Read story questions
+    const sTitle   = blk.querySelector(".s-title").value.trim();
+    const sImage   = blk.querySelector(".s-image").value.trim();
+    const sPass    = blk.querySelector(".s-passage").value.trim();
+    const sInstr   = blk.querySelector(".s-instructions").value.trim();
+    if (!sTitle && !sPass) return; // skip empty
     const qs = [];
     blk.querySelectorAll(".s-questions .question-row").forEach(row => {
       const t = row.querySelector(".qx").value.trim();
-      if (t) qs.push({ text: t, maxRounds: parseInt(row.querySelector(".qrx").value, 10) || 5 });
+      if (t) qs.push({ text:t, maxRounds:parseInt(row.querySelector(".qrx").value,10)||5 });
     });
-
-    // Read nested branches for this story
-    const branches = [];
-    blk.querySelectorAll(".nested-branches .learnmore-block").forEach((bblk) => {
-      const bTitle = bblk.querySelector(".nb-title").value.trim();
-      const bDesc = bblk.querySelector(".nb-desc").value.trim();
-      const bPass = bblk.querySelector(".nb-passage").value.trim();
-      const bInstr = bblk.querySelector(".nb-instructions").value.trim();
-      if (!bTitle && !bPass) return;
-
-      const bqs = [];
-      bblk.querySelectorAll(".nb-questions .question-row").forEach(row => {
-        const t = row.querySelector(".qx").value.trim();
-        if (t) bqs.push({ text: t, maxRounds: parseInt(row.querySelector(".qrx").value, 10) || 5 });
-      });
-
-      branches.push({
-        id: bblk.dataset.id || `b${Date.now()}_${branches.length}`,
-        title: bTitle, description: bDesc, passage: bPass, instructions: bInstr, questions: bqs
-      });
-    });
-
     stories.push({
       id: blk.dataset.id || `s${Date.now()}_${stories.length}`,
-      title: sTitle, imageUrl: sImage, passage: sPass, instructions: sInstr,
-      branches, // <-- branches nested inside story
-      questions: qs
+      title:sTitle, imageUrl:sImage, passage:sPass, instructions:sInstr, questions:qs
+    });
+  });
+
+  // Read all branches
+  const branches = [];
+  document.querySelectorAll(".learnmore-block").forEach((blk) => {
+    const bTitle = blk.querySelector(".b-title").value.trim();
+    const bDesc  = blk.querySelector(".b-desc").value.trim();
+    const bPass  = blk.querySelector(".b-passage").value.trim();
+    const bInstr = blk.querySelector(".b-instructions").value.trim();
+    if (!bTitle && !bPass) return;
+    const qs = [];
+    blk.querySelectorAll(".b-questions .question-row").forEach(row => {
+      const t = row.querySelector(".qx").value.trim();
+      if (t) qs.push({ text:t, maxRounds:parseInt(row.querySelector(".qrx").value,10)||5 });
+    });
+    branches.push({
+      id: blk.dataset.id || `b${Date.now()}_${branches.length}`,
+      title:bTitle, description:bDesc, passage:bPass, instructions:bInstr, questions:qs
     });
   });
 
   if (!stories.length) { toast("Add at least one story.", true); return; }
 
-  const reqStories = parseInt($("f-required-stories").value, 10) || 1;
-  const reqBranches = parseInt($("f-required-branches").value, 10) || 0;
+  const reqStories  = parseInt($("f-required-stories").value,10) || 1;
+  const reqBranches = parseInt($("f-required-branches").value,10) || 0;
 
   if (reqStories > stories.length) { toast(`You require ${reqStories} stories but only have ${stories.length}.`, true); return; }
+  if (reqBranches > branches.length) { toast(`You require ${reqBranches} branches but only have ${branches.length}.`, true); return; }
 
-  // Validate: if branches are required, each story must have at least that many
-  if (reqBranches > 0) {
-    for (const s of stories) {
-      if ((s.branches || []).length < reqBranches) {
-        toast(`"${s.title}" needs at least ${reqBranches} branches (has ${(s.branches || []).length}).`, true);
-        return;
-      }
-    }
-  }
-
+  // Read prompt-layer selections and resolve to combined instruction text
   const l1sel = document.getElementById("prompt-l1-select");
   const l2checks = document.getElementById("prompt-l2-checks");
   const l3sel = document.getElementById("prompt-l3-select");
   const promptCfg = {
     layer1: l1sel?.value || "",
-    layer2: l2checks ? Array.from(l2checks.querySelectorAll("input:checked")).map(c => c.value) : [],
+    layer2: l2checks ? Array.from(l2checks.querySelectorAll("input:checked")).map(c=>c.value) : [],
     layer3: l3sel?.value || ""
   };
   const resolvedInstructions = [
@@ -1358,18 +1319,18 @@ window.saveBranching = async (existingId) => {
 
   const { classIds, classNames } = readClassChecks();
   const payload = {
-    type: "branching", title,
-    subject: $("f-subject").value.trim(),
-    intro: $("f-intro").value.trim(),
+    type:"branching", title,
+    subject:        $("f-subject").value.trim(),
+    intro:          $("f-intro").value.trim(),
     promptCfg,
-    instructions: resolvedInstructions,
-    stories, // each story contains its own branches
-    requiredStories: reqStories,
+    instructions:   resolvedInstructions,
+    stories, branches,
+    requiredStories:  reqStories,
     requiredBranches: reqBranches,
     classIds, classNames,
-    teacherId: user.uid,
+    teacherId:   user.uid,
     teacherName: user.displayName,
-    updatedAt: serverTimestamp()
+    updatedAt:   serverTimestamp()
   };
   await commonSaveAndPost(existingId, payload);
 };
@@ -1406,6 +1367,7 @@ async function commonSaveAndPost(existingId, payload) {
     docId = ref.id;
   }
 
+  // Post to Google Classroom
   if (payload.classIds.length && APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("REPLACE")) {
     const assignmentUrl = window.location.href.split("?")[0] + `?a=${docId}`;
     try {
@@ -1432,6 +1394,7 @@ async function commonSaveAndPost(existingId, payload) {
 async function fetchTeacherClasses() {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.startsWith("REPLACE")) return [];
 
+  // Lazily request Classroom scope the first time a teacher needs it
   if (!gToken && role === "teacher") {
     try {
       const { reauthenticateWithPopup } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
@@ -1630,7 +1593,7 @@ window.startAssignment = async (assignmentId) => {
   if (curAssignment.type === "branching") {
     journey = {
       storiesCompleted:  [],
-      branchesCompleted: [],
+      branchesCompleted: [], // global list (across all stories)
       branchesCompletedThisStory: 0,
       currentStoryId:    null,
       currentBranchId:   null,
@@ -1724,7 +1687,7 @@ function renderStoryPicker() {
         </div>
         <div class="story-card-body">
           <p class="story-card-title">${escapeHTML(s.title)}</p>
-          <p class="story-card-meta">${(s.questions||[]).length} question${(s.questions||[]).length===1?'':'s'} · ${(s.branches||[]).length} branch${(s.branches||[]).length===1?'':'es'}</p>
+          <p class="story-card-meta">${(s.questions||[]).length} question${(s.questions||[]).length===1?'':'s'}</p>
         </div>
       </div>`;
   }).join("");
@@ -1764,15 +1727,16 @@ function renderStoryQuestion() {
   const total = story.questions.length;
 
   if (qIndex >= total) {
-    // Story finished — show branch picker if this story has any branches
-    const availableBr = (story.branches || []).length;
-    if (availableBr > 0) {
+    // Story finished — check whether branches should follow
+    const requiredBr = curAssignment.requiredBranches || 0;
+    const availableBr = (curAssignment.branches||[]).length;
+    if (requiredBr > 0 && availableBr > 0) {
       renderBranchPicker();
     } else {
       finishStory();
     }
     return;
-}
+  }
 
   followUpRound = 0;
   const q = story.questions[qIndex];
@@ -1821,43 +1785,29 @@ window.nextStoryQuestion = () => {
 function renderBranchPicker() {
   journey.phase = "branch-pick";
   const a = curAssignment;
-  const currentStory = a.stories.find(s => s.id === journey.currentStoryId);
-
-  // ONLY show branches that belong to this specific story
-  const availableBranches = currentStory?.branches || [];
-
   const requiredBr = a.requiredBranches || 0;
-  const doneCount = journey.branchesCompletedThisStory;
-  const remaining = requiredBr - doneCount;
+  const doneCount  = journey.branchesCompletedThisStory;
+  const remaining  = requiredBr - doneCount;
 
   let msg = "";
-const branchesOptional = requiredBr === 0;
-if (availableBranches.length === 0) {
-    msg = `No extra learning paths for this story.`;
-} else if (branchesOptional) {
-    if (doneCount === 0) {
-      msg = `Nice work finishing the story! You can <strong>optionally</strong> explore one or more "Learn More" branches below, or finish this story now.`;
-    } else {
-      msg = `You've explored <strong>${doneCount}</strong> branch${doneCount>1?'es':''}. Pick another or finish this story.`;
-    }
-} else if (doneCount === 0) {
+  if (doneCount === 0) {
     msg = `Now choose what you'd like to <strong>learn more about</strong>. Complete <strong>${requiredBr}</strong> to continue.`;
-} else if (remaining > 0) {
+  } else if (remaining > 0) {
     msg = `Nice! <strong>${doneCount} of ${requiredBr}</strong> done. Pick another.`;
-} else {
-    msg = `All required branches complete! 🎉`;
-}
+  } else {
+    msg = `All branches complete for this story! 🎉`;
+  }
 
   // Track which branches the student has done globally so they don't re-do
   const branchesDoneSet = new Set(journey.branchesCompleted);
 
-  const branchHTML = availableBranches.map(b => {
+  const branchHTML = a.branches.map(b => {
     const done = branchesDoneSet.has(b.id);
     return `
-      <div class="branch-picker-card ${done ? 'completed' : ''}" onclick="${done ? '' : `pickBranch('${b.id}')`}">
+      <div class="branch-picker-card ${done?'completed':''}" onclick="${done?'':`pickBranch('${b.id}')`}">
         <div class="branch-icon">🔍</div>
         <div class="branch-body">
-          <p class="branch-title">${escapeHTML(b.title)}${done ? ' ✓' : ''}</p>
+          <p class="branch-title">${escapeHTML(b.title)}${done?' ✓':''}</p>
           ${b.description ? `<p class="branch-desc">${escapeHTML(b.description)}</p>` : ""}
         </div>
       </div>`;
@@ -1866,22 +1816,19 @@ if (availableBranches.length === 0) {
   mc().innerHTML = `
     <div class="assignment-view">
       <button class="back-btn" onclick="renderStoryPicker()">← Back to Stories</button>
-      <h2 style="font-family:'Lora',serif;margin-bottom:4px">Learn More: ${escapeHTML(currentStory?.title || "")}</h2>
+      <h2 style="font-family:'Lora',serif;margin-bottom:4px">Learn More</h2>
       <div class="journey-progress">${msg}</div>
-      ${branchesOptional || remaining <= 0 || availableBranches.length === 0
-    ? `<div style="text-align:center;margin:24px 0">
-         <button class="btn ${remaining<=0||availableBranches.length===0?'btn-primary':'btn-secondary'}" onclick="finishStory()">
-           ${remaining<=0||availableBranches.length===0?'Finish This Story →':'Skip Branches & Finish Story'}
-         </button>
-       </div>`
-    : ""}
-      ${availableBranches.length > 0 ? branchHTML : ""}
+      ${remaining <= 0
+        ? `<div style="text-align:center;margin:24px 0">
+             <button class="btn btn-primary" onclick="finishStory()">Finish This Story →</button>
+           </div>`
+        : ""}
+      ${branchHTML}
     </div>`;
 }
 
 window.pickBranch = (branchId) => {
-  const currentStory = curAssignment.stories.find(s => s.id === journey.currentStoryId);
-  const branch = currentStory?.branches?.find(b => b.id === branchId);
+  const branch = curAssignment.branches.find(b => b.id === branchId);
   if (!branch) return;
   journey.currentBranchId = branchId;
   journey.phase = "branch-questions";
@@ -1891,8 +1838,7 @@ window.pickBranch = (branchId) => {
 };
 
 function renderBranchQuestion() {
-  const currentStory = curAssignment.stories.find(s => s.id === journey.currentStoryId);
-  const branch = currentStory?.branches?.find(b => b.id === journey.currentBranchId);
+  const branch = curAssignment.branches.find(b => b.id === journey.currentBranchId);
   if (!branch) return;
   const total = branch.questions.length;
 
@@ -1961,7 +1907,7 @@ window.finishStory = () => {
 };
 
 /* ═══════════════════════════════════════════════
-   SHARED ANSWER HANDLING
+   SHARED ANSWER HANDLING (linear + branching)
 ═══════════════════════════════════════════════ */
 window.handleSubmit = async (mode, roundId) => {
   const inputBox = mode === "first" ? $("student-answer") : $(`followup-answer-${roundId}`);
@@ -1985,6 +1931,7 @@ window.handleSubmit = async (mode, roundId) => {
 
   const rawFeedback = await getAIFeedback(answer);
 
+  // Parse [CONTINUE]/[ADVANCE]
   let signal = "CONTINUE";
   let cleanFeedback = rawFeedback;
   if (rawFeedback.includes("[ADVANCE]")) {
@@ -2002,6 +1949,7 @@ window.handleSubmit = async (mode, roundId) => {
        <div class="ai-response"><div class="ai-label">Tutor</div><p>${escapeHTML(cleanFeedback).replace(/\n/g,"<br/>")}</p></div>
      </div>`);
 
+  // Save in session with context label
   const ctx = getCurrentContextLabel();
   const qText = getCurrentQuestionText();
   session.push({ context:ctx, question:qText, answer, feedback:cleanFeedback });
@@ -2019,6 +1967,7 @@ window.handleSubmit = async (mode, roundId) => {
     }
     ar.scrollIntoView({behavior:"smooth", block:"center"});
   } else {
+    // Hide original input on first round; just add follow-up
     if (mode === "first") {
       inputBox.style.display = "none";
       $("submit-btn").style.display = "none";
@@ -2040,6 +1989,7 @@ window.handleSubmit = async (mode, roundId) => {
 };
 
 window.goNextQuestion = () => {
+  // Decide which next-question handler to call based on phase
   if (curAssignment.type !== "branching") return nextLinearQuestion();
   if (journey.phase === "story-questions")  return nextStoryQuestion();
   if (journey.phase === "branch-questions") return nextBranchQuestion();
@@ -2052,8 +2002,7 @@ function getCurrentContextLabel() {
     return `Story: ${s?.title||""} — Q${qIndex+1}`;
   }
   if (journey.phase === "branch-questions") {
-    const currentStory = curAssignment.stories.find(x => x.id === journey.currentStoryId);
-    const b = currentStory?.branches?.find(x => x.id === journey.currentBranchId);
+    const b = curAssignment.branches.find(x=>x.id===journey.currentBranchId);
     return `Branch: ${b?.title||""} — Q${qIndex+1}`;
   }
   return `Q${qIndex+1}`;
@@ -2069,8 +2018,7 @@ function getCurrentQuestionText() {
     return s.questions[qIndex].text;
   }
   if (journey.phase === "branch-questions") {
-    const currentStory = curAssignment.stories.find(x => x.id === journey.currentStoryId);
-    const b = currentStory?.branches?.find(x => x.id === journey.currentBranchId);
+    const b = curAssignment.branches.find(x=>x.id===journey.currentBranchId);
     return b.questions[qIndex].text;
   }
   return "";
@@ -2091,13 +2039,13 @@ async function getAIFeedback(studentAnswer) {
       systemPrompt = s.instructions || a.instructions || "";
       passage = s.passage;
     } else if (journey.phase === "branch-questions") {
-      const currentStory = curAssignment.stories.find(x => x.id === journey.currentStoryId);
-      const b = currentStory?.branches?.find(x => x.id === journey.currentBranchId);
+      const b = curAssignment.branches.find(x=>x.id===journey.currentBranchId);
       systemPrompt = b.instructions || a.instructions || "";
       passage = b.passage;
     }
   }
 
+  // Pull only exchanges from CURRENT question into history (not whole journey)
   const currentCtx = getCurrentContextLabel();
   const sameQ = session.filter(s => s.context === currentCtx);
   const conversationHistory = sameQ.map(s => [
