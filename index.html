@@ -4,7 +4,7 @@
 <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>your-project</title>
+<title>formedandsent</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
 <style>
@@ -431,7 +431,7 @@
 <div id="landing">
   <div class="landing-card">
     <div class="logo-mark">📖</div>
-    <h1>your-project</h1>
+    <h1>formedandsent</h1>
     <p class="landing-tagline">AI-powered reading assignments with personalised Socratic feedback for every student.</p>
     <hr class="divider"/>
     <button class="btn btn-google" onclick="signIn()">
@@ -444,7 +444,7 @@
  
 <div id="app">
   <header class="topbar">
-    <span class="topbar-logo">📖 your-project</span>
+    <span class="topbar-logo">📖 formedandsent</span>
     <span class="topbar-spacer"></span>
     <span class="topbar-role" id="topbar-role">Student</span>
     <div class="user-pill">
@@ -479,14 +479,15 @@ import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, deleteD
    🔧  CONFIG  — paste your existing values here
 ──────────────────────────────────────────────── */
 const FIREBASE_CONFIG = {
-    apiKey: "redacted",
-    authDomain: "your-project.firebaseapp.com",
-    projectId: "your-project",
-    storageBucket: "your-project.firebasestorage.app",
-    messagingSenderId: "Redacted",
-    appId: "1:Redacted:web:617cb6f11fd5139c35ee1b"
+    apiKey: "AIzaSyDpwK7arl0FS6uKnYyAI3O_hgkwM178A9Y",
+    authDomain: "formedandsent.firebaseapp.com",
+    projectId: "formedandsent",
+    storageBucket: "formedandsent.firebasestorage.app",
+    messagingSenderId: "1031066699010",
+    appId: "1:1031066699010:web:617cb6f11fd5139c35ee1b"
   };
-const APPS_SCRIPT_URL = "https://script.google.com/macros/redacted";
+// Your Google Apps Script web app URL (handles Sheets + Classroom)
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHKV-_Un-9xH9c0RRpUdcz7CCsZZYUhnldEgkcJX8bH8rNmT_ZUKdRuYrejhVFGIbbvg/exec";
 /* ──────────────────────────────────────────── */
  
 const fbApp = initializeApp(FIREBASE_CONFIG);
