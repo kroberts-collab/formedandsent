@@ -426,6 +426,22 @@
     margin-right:6px;
   }
 
+  /* Error state for responses loading */
+  .error-state {
+    text-align:center; padding:40px 20px; color:var(--warn);
+  }
+  .error-state .error-icon {
+    font-size:2.5rem; margin-bottom:12px;
+  }
+
+  /* Debug info panel */
+  .debug-panel {
+    background:#1a1814; color:#52b788; font-family:monospace;
+    padding:16px; border-radius:8px; margin-top:20px;
+    font-size:.8rem; max-height:200px; overflow-y:auto;
+    white-space:pre-wrap; word-break:break-all;
+  }
+
   @media (max-width:640px) {
     .sidebar { display:none; }
     .main-content { padding:20px 16px; }
@@ -540,6 +556,14 @@ function normaliseImageURL(url) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   DEBUG HELPERS
+═══════════════════════════════════════════════════════════ */
+function logDebug(label, data) {
+  const timestamp = new Date().toLocaleTimeString();
+  console.log(`[${timestamp}] ${label}:`, data);
+}
+
+/* ═══════════════════════════════════════════════════════════
    AUTOSAVE & LIVE RESPONSE SYNC
 ═══════════════════════════════════════════════════════════ */
 function progressDocId(assignmentId) { return `${user.uid}_${assignmentId}`; }
@@ -607,6 +631,7 @@ async function savePartialResponse() {
       lastSavedAt:     serverTimestamp()
     };
     await setDoc(doc(db, "responses", responseDocId(curAssignment.id)), payload, { merge: true });
+    logDebug("Partial response saved", { assignmentId: curAssignment.id, exchanges: session.length });
   } catch(e) {
     console.warn("partial response save failed:", e);
   }
@@ -1692,8 +1717,19 @@ window.duplicateAssignment = async id => {
 };
 
 /* ═══════════════════════════════════════════════
-   TEACHER — RESPONSES (now shows drafts live)
+   TEACHER — RESPONSES (with timeout & fallback)
 ═══════════════════════════════════════════════ */
+
+// Helper: fetch with timeout to prevent hanging
+function fetchWithTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+    )
+  ]);
+}
+
 window.renderResponses = async (assignmentId, title) => {
   mc().innerHTML = `
     <button class="back-btn" onclick="renderTeacherHome()">← Back</button>
@@ -1703,32 +1739,58 @@ window.renderResponses = async (assignmentId, title) => {
     </div>
     <div id="resp-container"><div class="loading-spinner"></div></div>`;
 
-  const snp = await getDocs(query(collection(db,"responses"), where("assignmentId","==",assignmentId)));
-  const cont = $("resp-container");
-  if (snp.empty) { cont.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No responses yet.</p></div>`; return; }
+  try {
+    logDebug("renderResponses start", { assignmentId, user: user?.uid });
 
-  let rows = "";
-  snp.forEach(d => {
-    const r = d.data();
-    const dt = r.submittedAt?.toDate?.()?.toLocaleDateString() ||
-               r.lastSavedAt?.toDate?.()?.toLocaleDateString() || "—";
-    const isDraft = r.isDraft === true;
-    const exchangeCount = (r.session||[]).length;
-    rows += `<tr class="${isDraft ? 'draft' : ''}">
-      <td>
-        ${isDraft ? '<span class="live-dot"></span>' : ''}
-        ${escapeHTML(r.studentName||'')}
-        ${isDraft ? '<span class="tag draft" style="margin-left:6px">In Progress</span>' : ''}
-      </td>
-      <td>${escapeHTML(r.studentEmail||'')}</td>
-      <td>${dt}</td>
-      <td>${exchangeCount} exchange${exchangeCount===1?'':'s'}</td>
-      <td><button class="expand-btn" onclick="showDetailModal('${d.id}')">View →</button></td>
-    </tr>`;
-  });
-  cont.innerHTML = `<table class="responses-table">
-    <thead><tr><th>Student</th><th>Email</th><th>Date</th><th>Activity</th><th></th></tr></thead>
-    <tbody>${rows}</tbody></table>`;
+    const snp = await fetchWithTimeout(
+      getDocs(query(collection(db,"responses"), where("assignmentId","==",assignmentId))),
+      15000,
+      "Responses query"
+    );
+
+    logDebug("renderResponses query done", { count: snp.size, empty: snp.empty });
+
+    const cont = $("resp-container");
+    if (snp.empty) {
+      cont.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No responses yet.</p></div>`;
+      return;
+    }
+
+    let rows = "";
+    snp.forEach(d => {
+      const r = d.data();
+      const dt = r.submittedAt?.toDate?.()?.toLocaleDateString() ||
+                 r.lastSavedAt?.toDate?.()?.toLocaleDateString() || "—";
+      const isDraft = r.isDraft === true;
+      const exchangeCount = (r.session||[]).length;
+      rows += `<tr class="${isDraft ? 'draft' : ''}">
+        <td>
+          ${isDraft ? '<span class="live-dot"></span>' : ''}
+          ${escapeHTML(r.studentName||'')}
+          ${isDraft ? '<span class="tag draft" style="margin-left:6px">In Progress</span>' : ''}
+        </td>
+        <td>${escapeHTML(r.studentEmail||'')}</td>
+        <td>${dt}</td>
+        <td>${exchangeCount} exchange${exchangeCount===1?'':'s'}</td>
+        <td><button class="expand-btn" onclick="showDetailModal('${d.id}')">View →</button></td>
+      </tr>`;
+    });
+    cont.innerHTML = `<table class="responses-table">
+      <thead><tr><th>Student</th><th>Email</th><th>Date</th><th>Activity</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table>`;
+  } catch (e) {
+    console.error("renderResponses error:", e);
+    logDebug("renderResponses ERROR", e.message);
+    $("resp-container").innerHTML = `
+      <div class="error-state">
+        <div class="error-icon">⚠️</div>
+        <p>Failed to load responses.<br><small>${escapeHTML(e.message)}</small></p>
+        <button class="btn btn-primary mt-md" onclick="renderResponses('${assignmentId}','${escapeHTML(title||"").replace(/'/g,"\\'")}')">Try Again</button>
+      </div>
+      <div class="debug-panel" id="resp-debug"></div>`;
+    document.getElementById("resp-debug").textContent = `Debug: ${e.stack || e.message}`;
+    toast("Error loading responses", true);
+  }
 };
 
 window.renderAllResponses = async () => {
@@ -1739,83 +1801,159 @@ window.renderAllResponses = async () => {
     </div>
     <div id="resp-container"><div class="loading-spinner"></div></div>`;
 
-  const snp = await getDocs(query(collection(db,"responses"), where("teacherId","==",user.uid)));
-  const cont = $("resp-container");
-  if (snp.empty) { cont.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No responses yet.</p></div>`; return; }
+  let debugInfo = [];
 
-  let rows = "";
-  snp.forEach(d => {
-    const r = d.data();
-    const dt = r.submittedAt?.toDate?.()?.toLocaleDateString() ||
-               r.lastSavedAt?.toDate?.()?.toLocaleDateString() || "—";
-    const isDraft = r.isDraft === true;
-    const exchangeCount = (r.session||[]).length;
-    rows += `<tr class="${isDraft ? 'draft' : ''}">
-      <td>
-        ${isDraft ? '<span class="live-dot"></span>' : ''}
-        ${escapeHTML(r.studentName||'')}
-        ${isDraft ? '<span class="tag draft" style="margin-left:6px">In Progress</span>' : ''}
-      </td>
-      <td>${escapeHTML(r.assignmentTitle||"—")}</td>
-      <td>${dt}</td>
-      <td>${exchangeCount} exchanges</td>
-      <td><button class="expand-btn" onclick="showDetailModal('${d.id}')">View →</button></td>
-    </tr>`;
-  });
-  cont.innerHTML = `<table class="responses-table">
-    <thead><tr><th>Student</th><th>Assignment</th><th>Date</th><th>Activity</th><th></th></tr></thead>
-    <tbody>${rows}</tbody></table>`;
+  try {
+    logDebug("renderAllResponses start", { user: user?.uid, role });
+
+    // Step 1: Get teacher's assignments with timeout
+    debugInfo.push("Step 1: Fetching assignments...");
+    const asgnQuery = query(collection(db,"assignments"), where("teacherId","==",user.uid));
+    const asgnSnap = await fetchWithTimeout(getDocs(asgnQuery), 15000, "Assignments query");
+
+    const assignmentIds = [];
+    asgnSnap.forEach(d => assignmentIds.push(d.id));
+    debugInfo.push(`Found ${assignmentIds.length} assignments: ${assignmentIds.join(", ") || "none"}`);
+
+    if (assignmentIds.length === 0) {
+      $("resp-container").innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No assignments yet — create one first!</p></div>`;
+      return;
+    }
+
+    // Step 2: Fetch responses by assignmentId batches
+    debugInfo.push("Step 2: Fetching responses...");
+    const cont = $("resp-container");
+    let allResponses = [];
+
+    for (let i = 0; i < assignmentIds.length; i += 10) {
+      const batch = assignmentIds.slice(i, i + 10);
+      debugInfo.push(`Fetching batch ${i/10 + 1}: ${batch.length} IDs`);
+
+      const respQuery = query(collection(db,"responses"), where("assignmentId","in",batch));
+      const respSnap = await fetchWithTimeout(getDocs(respQuery), 15000, `Responses batch ${i/10 + 1}`);
+
+      respSnap.forEach(d => {
+        const data = d.data();
+        allResponses.push({ id: d.id, data });
+      });
+    }
+
+    debugInfo.push(`Found ${allResponses.length} total responses`);
+
+    if (allResponses.length === 0) {
+      cont.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No responses yet.</p></div>`;
+      return;
+    }
+
+    // Sort by date (most recent first)
+    allResponses.sort((a, b) => {
+      const aTime = a.data.lastSavedAt?.toDate?.() || a.data.submittedAt?.toDate?.() || 0;
+      const bTime = b.data.lastSavedAt?.toDate?.() || b.data.submittedAt?.toDate?.() || 0;
+      return bTime - aTime;
+    });
+
+    let rows = "";
+    allResponses.forEach(({ id, data: r }) => {
+      const dt = r.submittedAt?.toDate?.()?.toLocaleDateString() ||
+                 r.lastSavedAt?.toDate?.()?.toLocaleDateString() || "—";
+      const isDraft = r.isDraft === true;
+      const exchangeCount = (r.session||[]).length;
+      rows += `<tr class="${isDraft ? 'draft' : ''}">
+        <td>
+          ${isDraft ? '<span class="live-dot"></span>' : ''}
+          ${escapeHTML(r.studentName||'')}
+          ${isDraft ? '<span class="tag draft" style="margin-left:6px">In Progress</span>' : ''}
+        </td>
+        <td>${escapeHTML(r.assignmentTitle||"—")}</td>
+        <td>${dt}</td>
+        <td>${exchangeCount} exchanges</td>
+        <td><button class="expand-btn" onclick="showDetailModal('${id}')">View →</button></td>
+      </tr>`;
+    });
+    cont.innerHTML = `<table class="responses-table">
+      <thead><tr><th>Student</th><th>Assignment</th><th>Date</th><th>Activity</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table>`;
+
+    logDebug("renderAllResponses success", { count: allResponses.length });
+
+  } catch (e) {
+    console.error("renderAllResponses error:", e);
+    logDebug("renderAllResponses ERROR", e.message);
+    $("resp-container").innerHTML = `
+      <div class="error-state">
+        <div class="error-icon">⚠️</div>
+        <p>Failed to load responses.<br><small>${escapeHTML(e.message)}</small></p>
+        <button class="btn btn-primary mt-md" onclick="renderAllResponses()">Try Again</button>
+      </div>
+      <div class="debug-panel" id="resp-debug"></div>`;
+    document.getElementById("resp-debug").textContent = debugInfo.join("\n") + "\n\nERROR: " + (e.stack || e.message);
+    toast("Error loading responses", true);
+  }
 };
 
 window.showDetailModal = async (responseId) => {
-  const snap = await getDoc(doc(db,"responses",responseId));
-  const r = snap.data();
-  const isDraft = r.isDraft === true;
-  const statusBanner = isDraft
-    ? `<div style="background:#fef3e2;color:#d97706;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:.85rem;font-weight:600">
-         <span class="live-dot"></span> This student is still working. Last saved: ${r.lastSavedAt?.toDate?.()?.toLocaleString() || "—"}
-       </div>`
-    : "";
-  const html = (r.session||[]).map((s,i) => `
-    <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)">
-      <p style="font-size:.78rem;font-weight:700;color:var(--ink3);text-transform:uppercase;margin-bottom:4px">${escapeHTML(s.context||"Q"+(i+1))}</p>
-      <p style="font-family:'Lora',serif;margin-bottom:8px">${escapeHTML(s.question)}</p>
-      <p style="font-size:.85rem;color:var(--ink2);margin-bottom:4px">Student:</p>
-      <p style="margin-bottom:8px;font-size:.92rem">${escapeHTML(s.answer)}</p>
-      <p style="font-size:.85rem;color:var(--accent);font-style:italic;border-left:2px solid var(--accent2);padding-left:10px">${escapeHTML(s.feedback)}</p>
-    </div>`).join("");
-  document.body.insertAdjacentHTML("beforeend", `
-    <div class="modal-overlay" id="detail-modal" onclick="if(event.target.id==='detail-modal')closeModal()">
-      <div class="modal">
-        <h2>${escapeHTML(r.studentName||"")} — ${escapeHTML(r.assignmentTitle||"")}</h2>
-        ${statusBanner}
-        <p style="color:var(--ink3);font-size:.85rem;margin-bottom:20px">${r.submittedAt?.toDate?.()?.toLocaleString() || r.lastSavedAt?.toDate?.()?.toLocaleString() || ""}</p>
-        ${html}
-        <div class="modal-actions">
-          <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+  try {
+    const snap = await getDoc(doc(db,"responses",responseId));
+    if (!snap.exists()) {
+      toast("Response not found", true);
+      return;
+    }
+    const r = snap.data();
+    const isDraft = r.isDraft === true;
+    const statusBanner = isDraft
+      ? `<div style="background:#fef3e2;color:#d97706;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:.85rem;font-weight:600">
+           <span class="live-dot"></span> This student is still working. Last saved: ${r.lastSavedAt?.toDate?.()?.toLocaleString() || "—"}
+         </div>`
+      : "";
+    const html = (r.session||[]).map((s,i) => `
+      <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)">
+        <p style="font-size:.78rem;font-weight:700;color:var(--ink3);text-transform:uppercase;margin-bottom:4px">${escapeHTML(s.context||"Q"+(i+1))}</p>
+        <p style="font-family:'Lora',serif;margin-bottom:8px">${escapeHTML(s.question)}</p>
+        <p style="font-size:.85rem;color:var(--ink2);margin-bottom:4px">Student:</p>
+        <p style="margin-bottom:8px;font-size:.92rem">${escapeHTML(s.answer)}</p>
+        <p style="font-size:.85rem;color:var(--accent);font-style:italic;border-left:2px solid var(--accent2);padding-left:10px">${escapeHTML(s.feedback)}</p>
+      </div>`).join("");
+    document.body.insertAdjacentHTML("beforeend", `
+      <div class="modal-overlay" id="detail-modal" onclick="if(event.target.id==='detail-modal')closeModal()">
+        <div class="modal">
+          <h2>${escapeHTML(r.studentName||"")} — ${escapeHTML(r.assignmentTitle||"")}</h2>
+          ${statusBanner}
+          <p style="color:var(--ink3);font-size:.85rem;margin-bottom:20px">${r.submittedAt?.toDate?.()?.toLocaleString() || r.lastSavedAt?.toDate?.()?.toLocaleString() || ""}</p>
+          ${html}
+          <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+          </div>
         </div>
-      </div>
-    </div>`);
+      </div>`);
+  } catch (e) {
+    console.error("showDetailModal error:", e);
+    toast("Failed to load response details", true);
+  }
 };
 window.closeModal = () => { const m = $("detail-modal"); if(m) m.remove(); };
 
 window.exportCSV = async (assignmentId) => {
-  const snp = await getDocs(query(collection(db,"responses"), where("assignmentId","==",assignmentId)));
-  let csv = "Student,Email,Date,Status,Context,Question,Answer,AI Feedback\n";
-  snp.forEach(d => {
-    const r = d.data();
-    const dt = r.submittedAt?.toDate?.()?.toLocaleDateString() ||
-               r.lastSavedAt?.toDate?.()?.toLocaleDateString() || "";
-    const status = r.isDraft === true ? "In Progress" : "Completed";
-    (r.session||[]).forEach(s => {
-      const esc = v => `"${(v||"").replace(/"/g,'""')}"`;
-      csv += `${esc(r.studentName)},${esc(r.studentEmail)},${esc(dt)},${esc(status)},${esc(s.context||"")},${esc(s.question)},${esc(s.answer)},${esc(s.feedback)}\n`;
+  try {
+    const snp = await getDocs(query(collection(db,"responses"), where("assignmentId","==",assignmentId)));
+    let csv = "Student,Email,Date,Status,Context,Question,Answer,AI Feedback\n";
+    snp.forEach(d => {
+      const r = d.data();
+      const dt = r.submittedAt?.toDate?.()?.toLocaleDateString() ||
+                 r.lastSavedAt?.toDate?.()?.toLocaleDateString() || "";
+      const status = r.isDraft === true ? "In Progress" : "Completed";
+      (r.session||[]).forEach(s => {
+        const esc = v => `"${(v||"").replace(/"/g,'""')}"`;
+        csv += `${esc(r.studentName)},${esc(r.studentEmail)},${esc(dt)},${esc(status)},${esc(s.context||"")},${esc(s.question)},${esc(s.answer)},${esc(s.feedback)}\n`;
+      });
     });
-  });
-  const a = document.createElement("a");
-  a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
-  a.download = "responses.csv";
-  a.click();
+    const a = document.createElement("a");
+    a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+    a.download = "responses.csv";
+    a.click();
+  } catch (e) {
+    console.error("exportCSV error:", e);
+    toast("Failed to export CSV", true);
+  }
 };
 
 /* ═══════════════════════════════════════════════
