@@ -4,7 +4,7 @@
 <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>formedandsent</title>
+<title>yourproject</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
 <style>
@@ -457,7 +457,7 @@
 <div id="landing">
   <div class="landing-card">
     <div class="logo-mark">📖</div>
-    <h1>formedandsent</h1>
+    <h1>yourproject</h1>
     <p class="landing-tagline">AI-powered reading assignments with personalised Socratic feedback for every student.</p>
     <hr class="divider"/>
     <button class="btn btn-google" onclick="signIn()">
@@ -470,7 +470,7 @@
 
 <div id="app">
   <header class="topbar">
-    <span class="topbar-logo">📖 formedandsent</span>
+    <span class="topbar-logo">📖 yourproject</span>
     <span class="topbar-spacer"></span>
     <span class="topbar-role" id="topbar-role">Student</span>
     <div class="user-pill">
@@ -820,7 +820,7 @@ async function renderPromptLayerSelector(containerId, layer, multiSelect, curren
         html += `<label>
           <input type="checkbox" value="${p.id}" ${checked} onchange="updateLayerPreview('${containerId}')"/>
           <span>${escapeHTML(p.name)}${p.builtin?'<span class="builtin-badge">(built-in)</span>':''}</span>
-          <button type="button" class="prompt-preview-toggle" style="margin-left:auto" onclick="event.preventDefault();openPromptEditor('${layer}', '${p.id}', '${containerId}', ${p.builtin?'true':'false'})">edit</button>
+          <button type="button" class="prompt-preview-toggle edit-prompt-btn" style="margin-left:auto" data-pid="${p.id}" data-builtin="${p.builtin?'true':'false'}">edit</button>
         </label>`;
       });
     }
@@ -844,7 +844,32 @@ async function renderPromptLayerSelector(containerId, layer, multiSelect, curren
   </div>`;
 
   container.innerHTML = html;
+    // Attach edit button handlers after HTML is inserted
+  if (multi) {
+    container.querySelectorAll('.edit-prompt-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const pid = btn.dataset.pid;
+        const isBuiltin = btn.dataset.builtin === 'true';
+        openPromptEditor(layer, pid, containerId, isBuiltin);
+      });
+    });
+  }
   updateLayerPreview(containerId);
+}
+// Add at end of renderPromptLayerSelector, after setting innerHTML:
+if (multi) {
+  container.querySelectorAll('.prompt-preview-toggle').forEach(btn => {
+    // Only attach to edit buttons, not the preview toggle
+    if (btn.textContent === 'edit') {
+      const pid = btn.closest('label').querySelector('input').value;
+      const isBuiltin = pid.startsWith('builtin-');
+      btn.onclick = (e) => {
+        e.preventDefault();
+        openPromptEditor(layer, pid, containerId, isBuiltin);
+      };
+    }
+  });
 }
 
 window.togglePromptPreview = (containerId) => {
@@ -883,11 +908,13 @@ window.openPromptEditor = async (layer, promptId, containerId, isBuiltin) => {
   const isB = existing?.builtin || isBuiltin === true || isBuiltin === "true";
   const layerName = { layer1:"Global Baseline", layer2:"Preset Approach", layer3:"Assignment-Specific Notes" }[layer];
 
-  // Ensure promptId is null for new prompts (not string "null")
-  const safePromptId = promptId === "null" ? null : promptId;
+  // Store these in closure-accessible variables instead of inline strings
+  const safePromptId = promptId && !["null", "undefined", ""].includes(String(promptId).toLowerCase())
+    ? promptId
+    : null;
 
   document.body.insertAdjacentHTML("beforeend", `
-    <div class="modal-overlay" id="prompt-editor-modal" onclick="if(event.target.id==='prompt-editor-modal')closePromptEditor()">
+    <div class="modal-overlay" id="prompt-editor-modal">
       <div class="modal">
         <h2>${safePromptId ? "Edit" : "New"} Prompt</h2>
         <p style="color:var(--ink3);font-size:.85rem;margin-bottom:16px">Layer: ${layerName}</p>
@@ -897,12 +924,25 @@ window.openPromptEditor = async (layer, promptId, containerId, isBuiltin) => {
         <label class="field-label">Prompt Text</label>
         <textarea id="pe-text" class="field-textarea" rows="12" placeholder="Type the prompt instructions…">${escapeHTML(existing?.text || "")}</textarea>
         <div class="modal-actions">
-          <button class="btn btn-secondary" onclick="closePromptEditor()">Cancel</button>
-          ${(existing && !isB) ?`<button class="btn btn-primary" onclick="savePromptEdit('${layer}','${safePromptId || ""}','${containerId}',false)">Update existing</button>` : ""}
-          <button class="btn btn-primary" onclick="savePromptEdit('${layer}','${safePromptId || ""}','${containerId}',true)">${safePromptId ? "Save as new" : "Save"}</button>
+          <button class="btn btn-secondary" id="pe-cancel">Cancel</button>
+          ${(safePromptId && !isB) ?`<button class="btn btn-primary" id="pe-update">Update existing</button>` : ""}
+          <button class="btn btn-primary" id="pe-save">${safePromptId ? "Save as new" : "Save"}</button>
         </div>
       </div>
     </div>`);
+
+  // Attach event listeners properly — no string serialization
+  document.getElementById("prompt-editor-modal").addEventListener("click", (e) => {
+    if (e.target.id === "prompt-editor-modal") closePromptEditor();
+  });
+  document.getElementById("pe-cancel").addEventListener("click", closePromptEditor);
+
+  const updateBtn = document.getElementById("pe-update");
+  if (updateBtn) {
+    updateBtn.addEventListener("click", () => savePromptEdit(layer, safePromptId, containerId, false));
+  }
+
+  document.getElementById("pe-save").addEventListener("click", () => savePromptEdit(layer, safePromptId, containerId, true));
 };
 
 window.closePromptEditor = () => {
@@ -915,18 +955,30 @@ window.savePromptEdit = async (layer, promptId, containerId, asNew) => {
   const text = document.getElementById("pe-text").value.trim();
   if (!name || !text) { toast("Name and text are required.", true); return; }
 
-  // FIX: treat string "null", empty string, or actual null as no ID (comes from inline handler)
-  const actualPromptId = (promptId === "null" || promptId === "" || promptId === null || promptId === undefined) ? null : promptId;
+  // Robust null/empty check — handles null, undefined, "null", "", "undefined"
+  const actualPromptId = promptId && !["null", "undefined", ""].includes(String(promptId).toLowerCase())
+    ? promptId
+    : null;
 
-  logDebug("savePromptEdit", { layer, promptId, actualPromptId, asNew, name, textLength: text.length });
+  const isUpdate = !asNew && actualPromptId && !String(actualPromptId).startsWith("builtin-");
+
+  logDebug("savePromptEdit", {
+    layer,
+    rawPromptId: promptId,
+    actualPromptId,
+    asNew,
+    isUpdate,
+    name,
+    textLength: text.length
+  });
 
   try {
-    if (!asNew && actualPromptId && !actualPromptId.startsWith("builtin-")) {
+    if (isUpdate) {
       await savePromptToLibrary(layer, name, text, actualPromptId);
       toast("Prompt updated ✓");
     } else {
       await savePromptToLibrary(layer, name, text, null);
-      toast("Prompt saved ✓");
+      toast(actualPromptId ? "Saved as new copy ✓" : "Prompt saved ✓");
     }
   } catch (err) {
     console.error("savePromptEdit error:", err);
@@ -942,7 +994,7 @@ window.savePromptEdit = async (layer, promptId, containerId, asNew) => {
     const multi = !!checks;
     let currentValue = null;
     if (multi) {
-      currentValue = Array.from(checks.querySelectorAll("input:checked")).map(c=>c.value);
+      currentValue = Array.from(checks.querySelectorAll("input:checked")).map(c => c.value);
     } else {
       const sel = document.getElementById(`${containerId}-select`);
       currentValue = sel?.value;
