@@ -460,7 +460,7 @@
     <h1>formedandsent</h1>
     <p class="landing-tagline">AI-powered reading assignments with personalised Socratic feedback for every student.</p>
     <hr class="divider"/>
-    <button class="btn btn-google" id="landing-signin-btn">
+    <button class="btn btn-google" onclick="signIn()">
       <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.3 0 6.2 1.2 8.5 3.1l6.3-6.3C34.9 2.9 29.8 1 24 1 14.8 1 7 6.6 3.7 14.4l7.4 5.7C12.7 14 17.9 9.5 24 9.5z"/><path fill="#4285F4" d="M46.6 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.5 2.9-2.2 5.4-4.7 7l7.3 5.7c4.3-4 6.8-9.9 6.8-16.7z"/><path fill="#FBBC05" d="M11.1 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.1.8-4.6L2.9 13.7A23 23 0 0 0 1 24c0 3.7.9 7.2 2.5 10.3l7.6-5.7z"/><path fill="#34A853" d="M24 47c6 0 11-2 14.7-5.3l-7.3-5.7c-2 1.4-4.6 2.2-7.4 2.2-6.1 0-11.3-4.1-13.1-9.7L3.3 34c3.2 7.8 11 13 20.7 13z"/></svg>
       Sign in with Google
     </button>
@@ -537,9 +537,6 @@ let autosaveTimer=null;
 
 const $  = id => document.getElementById(id);
 const mc = () => $("main-content");
-
-// Bind landing page sign-in button (module script loads after DOM, so inline onclick fails)
-document.getElementById("landing-signin-btn")?.addEventListener("click", () => signIn());
 
 function toast(msg, isError=false) {
   const t = $("toast");
@@ -812,7 +809,7 @@ async function renderPromptLayerSelector(containerId, layer, multiSelect, curren
       </div>
     </div>`;
 
-  if (multiSelectSelect) {
+  if (multiSelect) {
     const selectedIds = Array.isArray(currentValue) ? currentValue : [];
     html +=`<div class="prompt-multi-select" id="${containerId}-checks">`;
     if (items.length === 0) {
@@ -823,7 +820,7 @@ async function renderPromptLayerSelector(containerId, layer, multiSelect, curren
         html += `<label>
           <input type="checkbox" value="${p.id}" ${checked} onchange="updateLayerPreview('${containerId}')"/>
           <span>${escapeHTML(p.name)}${p.builtin?'<span class="builtin-badge">(built-in)</span>':''}</span>
-          <button type="button" class="prompt-preview-toggle edit-prompt-btn" style="margin-left:auto" data-pid="${p.id}" data-builtin="${p.builtin?'true':'false'}">edit</button>
+          <button type="button" class="prompt-preview-toggle" style="margin-left:auto" onclick="event.preventDefault();openPromptEditor('${layer}', '${p.id}', '${containerId}', ${p.builtin?'true':'false'})">edit</button>
         </label>`;
       });
     }
@@ -846,17 +843,7 @@ async function renderPromptLayerSelector(containerId, layer, multiSelect, curren
     <div class="prompt-preview hidden" id="${containerId}-preview"></div>
   </div>`;
 
-    container.innerHTML = html;
-  if (multiSelect) {
-    container.querySelectorAll('.edit-prompt-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const pid = btn.dataset.pid;
-        const isBuiltin = btn.dataset.builtin === 'true';
-        openPromptEditor(layer, pid, containerId, isBuiltin);
-      });
-    });
-  }
+  container.innerHTML = html;
   updateLayerPreview(containerId);
 }
 
@@ -896,13 +883,11 @@ window.openPromptEditor = async (layer, promptId, containerId, isBuiltin) => {
   const isB = existing?.builtin || isBuiltin === true || isBuiltin === "true";
   const layerName = { layer1:"Global Baseline", layer2:"Preset Approach", layer3:"Assignment-Specific Notes" }[layer];
 
-  // Store these in closure-accessible variables instead of inline strings
-  const safePromptId = promptId && !["null", "undefined", ""].includes(String(promptId).toLowerCase())
-    ? promptId
-    : null;
+  // Ensure promptId is null for new prompts (not string "null")
+  const safePromptId = promptId === "null" ? null : promptId;
 
   document.body.insertAdjacentHTML("beforeend", `
-    <div class="modal-overlay" id="prompt-editor-modal">
+    <div class="modal-overlay" id="prompt-editor-modal" onclick="if(event.target.id==='prompt-editor-modal')closePromptEditor()">
       <div class="modal">
         <h2>${safePromptId ? "Edit" : "New"} Prompt</h2>
         <p style="color:var(--ink3);font-size:.85rem;margin-bottom:16px">Layer: ${layerName}</p>
@@ -912,25 +897,12 @@ window.openPromptEditor = async (layer, promptId, containerId, isBuiltin) => {
         <label class="field-label">Prompt Text</label>
         <textarea id="pe-text" class="field-textarea" rows="12" placeholder="Type the prompt instructions…">${escapeHTML(existing?.text || "")}</textarea>
         <div class="modal-actions">
-          <button class="btn btn-secondary" id="pe-cancel">Cancel</button>
-          ${(safePromptId && !isB) ?`<button class="btn btn-primary" id="pe-update">Update existing</button>` : ""}
-          <button class="btn btn-primary" id="pe-save">${safePromptId ? "Save as new" : "Save"}</button>
+          <button class="btn btn-secondary" onclick="closePromptEditor()">Cancel</button>
+          ${(existing && !isB) ?`<button class="btn btn-primary" onclick="savePromptEdit('${layer}','${safePromptId || ""}','${containerId}',false)">Update existing</button>` : ""}
+          <button class="btn btn-primary" onclick="savePromptEdit('${layer}','${safePromptId || ""}','${containerId}',true)">${safePromptId ? "Save as new" : "Save"}</button>
         </div>
       </div>
     </div>`);
-
-  // Attach event listeners properly — no string serialization
-  document.getElementById("prompt-editor-modal").addEventListener("click", (e) => {
-    if (e.target.id === "prompt-editor-modal") closePromptEditor();
-  });
-  document.getElementById("pe-cancel").addEventListener("click", closePromptEditor);
-
-  const updateBtn = document.getElementById("pe-update");
-  if (updateBtn) {
-    updateBtn.addEventListener("click", () => savePromptEdit(layer, safePromptId, containerId, false));
-  }
-
-  document.getElementById("pe-save").addEventListener("click", () => savePromptEdit(layer, safePromptId, containerId, true));
 };
 
 window.closePromptEditor = () => {
@@ -943,19 +915,18 @@ window.savePromptEdit = async (layer, promptId, containerId, asNew) => {
   const text = document.getElementById("pe-text").value.trim();
   if (!name || !text) { toast("Name and text are required.", true); return; }
 
-  const cleanId = promptId ? String(promptId).trim() : "";
-  const actualPromptId = (cleanId === "" || cleanId === "null" || cleanId === "undefined") ? null : cleanId;
-  const isUpdate = !asNew && actualPromptId !== null && !actualPromptId.startsWith("builtin-");
+  // FIX: treat string "null", empty string, or actual null as no ID (comes from inline handler)
+  const actualPromptId = (promptId === "null" || promptId === "" || promptId === null || promptId === undefined) ? null : promptId;
 
-  logDebug("savePromptEdit", { layer, rawPromptId: promptId, actualPromptId, asNew, isUpdate, name });
+  logDebug("savePromptEdit", { layer, promptId, actualPromptId, asNew, name, textLength: text.length });
 
   try {
-    if (isUpdate) {
+    if (!asNew && actualPromptId && !actualPromptId.startsWith("builtin-")) {
       await savePromptToLibrary(layer, name, text, actualPromptId);
       toast("Prompt updated ✓");
     } else {
       await savePromptToLibrary(layer, name, text, null);
-      toast(actualPromptId ? "Saved as new copy ✓" : "Prompt saved ✓");
+      toast("Prompt saved ✓");
     }
   } catch (err) {
     console.error("savePromptEdit error:", err);
@@ -968,61 +939,16 @@ window.savePromptEdit = async (layer, promptId, containerId, asNew) => {
     renderPromptLibrary();
   } else {
     const checks = document.getElementById(`${containerId}-checks`);
-    const isMulti = !!checks;
+    const multi = !!checks;
     let currentValue = null;
-    if (isMulti) {
+    if (multi) {
       currentValue = Array.from(checks.querySelectorAll("input:checked")).map(c=>c.value);
     } else {
       const sel = document.getElementById(`${containerId}-select`);
       currentValue = sel?.value;
     }
-    await renderPromptLayerSelector(containerId, layer, isMulti, currentValue);
+    await renderPromptLayerSelector(containerId, layer, multi, currentValue);
   }
-};
-
-window.closePromptEditor = () => {
-  const m = document.getElementById("prompt-editor-modal");
-  if (m) m.remove();
-};
-
-window.openPromptEditor = async (layer, promptId, containerId, isBuiltin) => {
-  const lib = await loadPromptLibrary();
-  const existing = promptId ? (lib[layer] || []).find(p => p.id === promptId) : null;
-  const isB = existing?.builtin || isBuiltin === true || isBuiltin === "true";
-  const layerName = { layer1:"Global Baseline", layer2:"Preset Approach", layer3:"Assignment-Specific Notes" }[layer];
-
-  const cleanId = promptId ? String(promptId).trim() : "";
-  const safePromptId = (cleanId === "" || cleanId === "null" || cleanId === "undefined") ? null : cleanId;
-
-  document.body.insertAdjacentHTML("beforeend", `
-    <div class="modal-overlay" id="prompt-editor-modal">
-      <div class="modal">
-        <h2>${safePromptId ? "Edit" : "New"} Prompt</h2>
-        <p style="color:var(--ink3);font-size:.85rem;margin-bottom:16px">Layer: ${layerName}</p>
-        ${isB ?`<p style="background:#e8f0fb;color:#2563eb;padding:8px 12px;border-radius:6px;font-size:.85rem;margin-bottom:14px">📌 Built-in prompt. Editing creates a new copy — the original stays available.</p>` : ""}
-        <label class="field-label" style="margin-top:0">Name</label>
-        <input id="pe-name" class="field-input" value="${escapeHTML(existing?.name || "")}" placeholder="e.g. Bible Study Socratic v2"/>
-        <label class="field-label">Prompt Text</label>
-        <textarea id="pe-text" class="field-textarea" rows="12" placeholder="Type the prompt instructions…">${escapeHTML(existing?.text || "")}</textarea>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" id="pe-cancel">Cancel</button>
-          ${(safePromptId && !isB) ?`<button class="btn btn-primary" id="pe-update">Update existing</button>` : ""}
-          <button class="btn btn-primary" id="pe-save">${safePromptId ? "Save as new" : "Save"}</button>
-        </div>
-      </div>
-    </div>`);
-
-  document.getElementById("prompt-editor-modal").addEventListener("click", (e) => {
-    if (e.target.id === "prompt-editor-modal") closePromptEditor();
-  });
-  document.getElementById("pe-cancel").addEventListener("click", closePromptEditor);
-
-  const updateBtn = document.getElementById("pe-update");
-  if (updateBtn) {
-    updateBtn.addEventListener("click", () => savePromptEdit(layer, safePromptId, containerId, false));
-  }
-
-  document.getElementById("pe-save").addEventListener("click", () => savePromptEdit(layer, safePromptId, containerId, true));
 };
 
 window.renderPromptLibrary = async () => {
@@ -1114,7 +1040,6 @@ window.signIn = async () => {
     gToken = null;
   } catch(e) { toast(e.message, true); }
 };
-
 window.signOutUser = async () => { await signOut(auth); };
 
 onAuthStateChanged(auth, async u => {
@@ -1159,7 +1084,6 @@ function buildSidebar() {
       <button class="nav-item active" onclick="renderStudentHome()">🏠 My Assignments</button>`;
   }
 }
-
 function setActiveNav(id) {
   document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
   const el = $(id); if (el) el.classList.add("active");
@@ -1555,13 +1479,16 @@ window.updateStoryTitle = (i, val) => {
 window.addNestedBranch = (storyIdx) => {
   const list = $(`branches-list-${storyIdx}`);
   if (!list) return;
+  // Remove placeholder if present
   const placeholder = list.querySelector(".no-branches-placeholder");
   if (placeholder) placeholder.remove();
   const branchIdx = list.children.length;
   list.insertAdjacentHTML("beforeend", nestedBranchBlock(storyIdx, branchIdx, emptyBranch(branchIdx)));
 
+  // Make sure the requiredBranches selector exists (regenerate if it doesn't)
   const nestedBox = $(`nested-branches-${storyIdx}`);
   if (nestedBox && !nestedBox.querySelector(".s-required-branches")) {
+    // Add a small selector below the list
     const after = list;
     after.insertAdjacentHTML("afterend", `
       <label class="field-label" style="margin-top:14px">After finishing this story, branches required</label>
@@ -1572,6 +1499,7 @@ window.addNestedBranch = (storyIdx) => {
       <p class="field-hint">Set to 0 if branches are optional. Otherwise, students must complete this many before this story counts as done.</p>
     `);
   } else if (nestedBox) {
+    // Update existing select to have enough options
     const sel = nestedBox.querySelector(".s-required-branches");
     if (sel && sel.tagName === "SELECT") {
       const current = parseInt(sel.value, 10) || 0;
@@ -1591,6 +1519,7 @@ window.removeNestedBranch = (storyIdx, branchIdx) => {
   if (!confirm("Remove this branch?")) return;
   const el = $(`branch-${storyIdx}-${branchIdx}`);
   if (el) el.remove();
+  // If no branches left, restore placeholder
   const list = $(`branches-list-${storyIdx}`);
   if (list && list.children.length === 0) {
     list.innerHTML =`<div class="no-branches-placeholder">No branches yet for this story. Click "Add Branch to This Story" above to create one.</div>`;
@@ -1657,6 +1586,7 @@ window.saveBranching = async (existingId) => {
       });
     });
 
+    // Read per-story requiredBranches
     const reqSel = blk.querySelector(".s-required-branches");
     let storyReqBranches = 0;
     if (reqSel) storyReqBranches = parseInt(reqSel.value, 10) || 0;
@@ -1806,6 +1736,7 @@ window.duplicateAssignment = async id => {
    TEACHER — RESPONSES (with timeout & fallback)
 ═══════════════════════════════════════════════ */
 
+// Helper: fetch with timeout to prevent hanging
 function fetchWithTimeout(promise, ms, label) {
   return Promise.race([
     promise,
@@ -1891,6 +1822,7 @@ window.renderAllResponses = async () => {
   try {
     logDebug("renderAllResponses start", { user: user?.uid, role });
 
+    // Step 1: Get teacher's assignments with timeout
     debugInfo.push("Step 1: Fetching assignments...");
     const asgnQuery = query(collection(db,"assignments"), where("teacherId","==",user.uid));
     const asgnSnap = await fetchWithTimeout(getDocs(asgnQuery), 15000, "Assignments query");
@@ -1904,6 +1836,7 @@ window.renderAllResponses = async () => {
       return;
     }
 
+    // Step 2: Fetch responses by assignmentId batches
     debugInfo.push("Step 2: Fetching responses...");
     const cont = $("resp-container");
     let allResponses = [];
@@ -1928,6 +1861,7 @@ window.renderAllResponses = async () => {
       return;
     }
 
+    // Sort by date (most recent first)
     allResponses.sort((a, b) => {
       const aTime = a.data.lastSavedAt?.toDate?.() || a.data.submittedAt?.toDate?.() || 0;
       const bTime = b.data.lastSavedAt?.toDate?.() || b.data.submittedAt?.toDate?.() || 0;
@@ -2062,6 +1996,7 @@ async function renderStudentHome() {
   const doneIds = new Set();
   doneSnap.forEach(d => doneIds.add(d.data().assignmentId));
 
+  // Check which assignments have in-progress drafts
   const progSnap = await getDocs(query(collection(db,"progress"), where("studentId","==",user.uid)));
   const inProgressIds = new Set();
   progSnap.forEach(d => inProgressIds.add(d.data().assignmentId));
@@ -2097,12 +2032,14 @@ window.startAssignment = async (assignmentId) => {
   if (!snap.exists()) { toast("Assignment not found.", true); return; }
   curAssignment = { id: assignmentId, ...snap.data() };
 
+  // Check for saved progress
   const saved = await loadProgress(assignmentId);
   if (saved && (saved.session?.length || (saved.journey && saved.journey.storiesCompleted?.length))) {
     showResumePrompt(saved);
     return;
   }
 
+  // Fresh start
   freshStart();
 };
 
@@ -2157,6 +2094,7 @@ function showResumePrompt(saved) {
       <p style="margin-top:18px"><button class="back-btn" onclick="renderStudentHome()">← Back to assignments</button></p>
     </div>`;
 
+  // Stash saved for resume
   window._savedProgress = saved;
 }
 
@@ -2170,6 +2108,7 @@ window.resumeFromSaved = () => {
   window._savedProgress = null;
 
   if (curAssignment.type === "branching") {
+    // Route to the correct phase
     const phase = journey.phase || "story-pick";
     if (phase === "story-questions" && journey.currentStoryId) {
       renderStoryQuestion();
@@ -2327,6 +2266,7 @@ function renderStoryQuestion() {
   const total = story.questions.length;
 
   if (qIndex >= total) {
+    // Story base questions finished. If this story has branches, show the picker.
     const hasBranches = (story.branches || []).length > 0;
     if (hasBranches) {
       journey.phase = "branch-pick";
@@ -2388,6 +2328,7 @@ function renderBranchPicker() {
   const currentStory = a.stories.find(s => s.id === journey.currentStoryId);
   if (!currentStory) { renderStoryPicker(); return; }
 
+  // ONLY this story's branches
   const availableBranches = currentStory.branches || [];
   const requiredBr = currentStory.requiredBranches || 0;
   const doneCount = journey.branchesCompletedThisStory || 0;
@@ -2467,6 +2408,7 @@ function renderBranchQuestion() {
   const total = branch.questions.length;
 
   if (qIndex >= total) {
+    // Branch done
     if (!journey.branchesCompleted.includes(branch.id)) journey.branchesCompleted.push(branch.id);
     journey.branchesCompletedThisStory = (journey.branchesCompletedThisStory || 0) + 1;
     journey.currentBranchId = null;
@@ -2579,6 +2521,7 @@ window.handleSubmit = async (mode, roundId) => {
   session.push({ context:ctx, question:qText, answer, feedback:cleanFeedback });
 
   followUpRound++;
+  // ★ AUTOSAVE after every exchange (local progress + live teacher visibility)
   await Promise.all([
     saveProgress(),
     savePartialResponse()
@@ -2721,6 +2664,7 @@ window.completeAssignment = async () => {
   };
   await setDoc(doc(db, "responses", responseDocId(curAssignment.id)), responseData);
 
+  // ★ Clean up progress doc now that it's finalised
   await deleteProgress(curAssignment.id);
 
   if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("REPLACE")) {
@@ -2750,8 +2694,10 @@ window.completeAssignment = async () => {
     </div>`;
 };
 
+// Save progress if user closes the tab mid-session
 window.addEventListener("beforeunload", () => {
   if (user && curAssignment && session.length > 0) {
+    // Best-effort sync save — most browsers allow no async here
     try { saveProgress(); savePartialResponse(); } catch(_) {}
   }
 });
