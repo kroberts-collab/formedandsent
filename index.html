@@ -551,7 +551,7 @@ function normaliseImageURL(url) {
   if (!url) return "";
   url = url.trim();
   const m = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/);
-  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
+  if (m) return`https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
   return url;
 }
 
@@ -566,15 +566,15 @@ function logDebug(label, data) {
 /* ═══════════════════════════════════════════════════════════
    AUTOSAVE & LIVE RESPONSE SYNC
 ═══════════════════════════════════════════════════════════ */
-function progressDocId(assignmentId) { return `${user.uid}_${assignmentId}`; }
+function progressDocId(assignmentId) { return`${user.uid}_${assignmentId}`; }
 
-function responseDocId(assignmentId) { return `${user.uid}_${assignmentId}`; }
+function responseDocId(assignmentId) { return`${user.uid}_${assignmentId}`; }
 
 function showAutosavePill(state, text) {
   const pill = $("autosave-pill");
   const txt  = $("autosave-text");
   if (!pill || !txt) return;
-  pill.className = `autosave-pill show ${state}`;
+  pill.className =`autosave-pill show ${state}`;
   txt.textContent = text;
   if (state === "saved" || state === "error") {
     clearTimeout(autosaveTimer);
@@ -625,9 +625,9 @@ async function savePartialResponse() {
       studentName:     user.displayName,
       studentEmail:    user.email,
       teacherId:       curAssignment.teacherId,
-      session:         session,
-      journey:         curAssignment.type === "branching" ? journey : null,
-      isDraft:         true,
+      session: session,
+      journey: curAssignment.type === "branching" ? journey : null,
+      isDraft: true,
       lastSavedAt:     serverTimestamp()
     };
     await setDoc(doc(db, "responses", responseDocId(curAssignment.id)), payload, { merge: true });
@@ -655,14 +655,14 @@ async function cleanUpPartialResponse() {
 
 async function loadProgress(assignmentId) {
   try {
-    const snap = await getDoc(doc(db,"progress", `${user.uid}_${assignmentId}`));
+    const snap = await getDoc(doc(db,"progress",`${user.uid}_${assignmentId}`));
     return snap.exists() ? snap.data() : null;
   } catch(e) { console.warn("loadProgress:", e); return null; }
 }
 
 async function deleteProgress(assignmentId) {
   try {
-    await deleteDoc(doc(db,"progress", `${user.uid}_${assignmentId}`));
+    await deleteDoc(doc(db,"progress",`${user.uid}_${assignmentId}`));
   } catch(e) { console.warn("deleteProgress:", e); }
 }
 
@@ -811,9 +811,9 @@ async function renderPromptLayerSelector(containerId, layer, multiSelect, curren
 
   if (multiSelect) {
     const selectedIds = Array.isArray(currentValue) ? currentValue : [];
-    html += `<div class="prompt-multi-select" id="${containerId}-checks">`;
+    html +=`<div class="prompt-multi-select" id="${containerId}-checks">`;
     if (items.length === 0) {
-      html += `<p style="color:var(--ink3);font-size:.85rem">No options yet. Click "Add new" to create one.</p>`;
+      html +=`<p style="color:var(--ink3);font-size:.85rem">No options yet. Click "Add new" to create one.</p>`;
     } else {
       items.forEach(p => {
         const checked = selectedIds.includes(p.id) ? "checked" : "";
@@ -824,16 +824,16 @@ async function renderPromptLayerSelector(containerId, layer, multiSelect, curren
         </label>`;
       });
     }
-    html += `</div>`;
+    html +=`</div>`;
   } else {
     const selectedId = currentValue || (items[0]?.id || "");
-    html += `<select class="prompt-layer-select" id="${containerId}-select" onchange="updateLayerPreview('${containerId}')" style="width:100%;max-width:none">`;
-    if (layer === "layer3") html += `<option value="">— None —</option>`;
+    html +=`<select class="prompt-layer-select" id="${containerId}-select" onchange="updateLayerPreview('${containerId}')" style="width:100%;max-width:none">`;
+    if (layer === "layer3") html +=`<option value="">— None —</option>`;
     items.forEach(p => {
       const selected = p.id === selectedId ? "selected" : "";
-      html += `<option value="${p.id}" ${selected}>${escapeHTML(p.name)}${p.builtin?' (built-in)':''}</option>`;
+      html +=`<option value="${p.id}" ${selected}>${escapeHTML(p.name)}${p.builtin?' (built-in)':''}</option>`;
     });
-    html += `</select>`;
+    html +=`</select>`;
     html += `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
       <button type="button" class="btn btn-ghost" style="padding:5px 10px;font-size:.8rem" onclick="editSelectedPrompt('${layer}','${containerId}')">✏️ Edit selected</button>
     </div>`;
@@ -883,20 +883,23 @@ window.openPromptEditor = async (layer, promptId, containerId, isBuiltin) => {
   const isB = existing?.builtin || isBuiltin === true || isBuiltin === "true";
   const layerName = { layer1:"Global Baseline", layer2:"Preset Approach", layer3:"Assignment-Specific Notes" }[layer];
 
+  // Ensure promptId is null for new prompts (not string "null")
+  const safePromptId = promptId === "null" ? null : promptId;
+
   document.body.insertAdjacentHTML("beforeend", `
     <div class="modal-overlay" id="prompt-editor-modal" onclick="if(event.target.id==='prompt-editor-modal')closePromptEditor()">
       <div class="modal">
-        <h2>${promptId ? "Edit" : "New"} Prompt</h2>
+        <h2>${safePromptId ? "Edit" : "New"} Prompt</h2>
         <p style="color:var(--ink3);font-size:.85rem;margin-bottom:16px">Layer: ${layerName}</p>
-        ${isB ? `<p style="background:#e8f0fb;color:#2563eb;padding:8px 12px;border-radius:6px;font-size:.85rem;margin-bottom:14px">📌 Built-in prompt. Editing creates a new copy — the original stays available.</p>` : ""}
+        ${isB ?`<p style="background:#e8f0fb;color:#2563eb;padding:8px 12px;border-radius:6px;font-size:.85rem;margin-bottom:14px">📌 Built-in prompt. Editing creates a new copy — the original stays available.</p>` : ""}
         <label class="field-label" style="margin-top:0">Name</label>
         <input id="pe-name" class="field-input" value="${escapeHTML(existing?.name || "")}" placeholder="e.g. Bible Study Socratic v2"/>
         <label class="field-label">Prompt Text</label>
         <textarea id="pe-text" class="field-textarea" rows="12" placeholder="Type the prompt instructions…">${escapeHTML(existing?.text || "")}</textarea>
         <div class="modal-actions">
           <button class="btn btn-secondary" onclick="closePromptEditor()">Cancel</button>
-          ${(existing && !isB) ? `<button class="btn btn-primary" onclick="savePromptEdit('${layer}','${promptId}','${containerId}',false)">Update existing</button>` : ""}
-          <button class="btn btn-primary" onclick="savePromptEdit('${layer}','${promptId}','${containerId}',true)">${existing ? "Save as new" : "Save"}</button>
+          ${(existing && !isB) ?`<button class="btn btn-primary" onclick="savePromptEdit('${layer}','${safePromptId || ""}','${containerId}',false)">Update existing</button>` : ""}
+          <button class="btn btn-primary" onclick="savePromptEdit('${layer}','${safePromptId || ""}','${containerId}',true)">${safePromptId ? "Save as new" : "Save"}</button>
         </div>
       </div>
     </div>`);
@@ -912,18 +915,40 @@ window.savePromptEdit = async (layer, promptId, containerId, asNew) => {
   const text = document.getElementById("pe-text").value.trim();
   if (!name || !text) { toast("Name and text are required.", true); return; }
 
-  // FIX: treat string "null" as actual null (comes from inline handler)
-  const actualPromptId = (promptId === "null" || promptId === null) ? null : promptId;
+  // FIX: treat string "null", empty string, or actual null as no ID (comes from inline handler)
+  const actualPromptId = (promptId === "null" || promptId === "" || promptId === null || promptId === undefined) ? null : promptId;
 
-  if (!asNew && actualPromptId && !actualPromptId.startsWith("builtin-")) {
-    await savePromptToLibrary(layer, name, text, actualPromptId);
-    toast("Prompt updated ✓");
-  } else {
-    await savePromptToLibrary(layer, name, text, null);
-    toast("Prompt saved ✓");
+  logDebug("savePromptEdit", { layer, promptId, actualPromptId, asNew, name, textLength: text.length });
+
+  try {
+    if (!asNew && actualPromptId && !actualPromptId.startsWith("builtin-")) {
+      await savePromptToLibrary(layer, name, text, actualPromptId);
+      toast("Prompt updated ✓");
+    } else {
+      await savePromptToLibrary(layer, name, text, null);
+      toast("Prompt saved ✓");
+    }
+  } catch (err) {
+    console.error("savePromptEdit error:", err);
+    toast("Failed to save: " + err.message, true);
+    return;
   }
+
   closePromptEditor();
-  // ... rest unchanged
+  if (containerId === "_library_") {
+    renderPromptLibrary();
+  } else {
+    const checks = document.getElementById(`${containerId}-checks`);
+    const multi = !!checks;
+    let currentValue = null;
+    if (multi) {
+      currentValue = Array.from(checks.querySelectorAll("input:checked")).map(c=>c.value);
+    } else {
+      const sel = document.getElementById(`${containerId}-select`);
+      currentValue = sel?.value;
+    }
+    await renderPromptLayerSelector(containerId, layer, multi, currentValue);
+  }
 };
 
 window.renderPromptLibrary = async () => {
@@ -956,7 +981,7 @@ window.renderPromptLibrary = async () => {
           <button class="btn btn-primary" onclick="openPromptEditor('${layer.key}', null, '_library_')">+ Add</button>
         </div>`;
     if (items.length === 0) {
-      html += `<p style="color:var(--ink3);font-style:italic;font-size:.9rem">No prompts in this layer yet.</p>`;
+      html +=`<p style="color:var(--ink3);font-style:italic;font-size:.9rem">No prompts in this layer yet.</p>`;
     } else {
       items.forEach(p => {
         html += `<div class="prompt-card">
@@ -976,7 +1001,7 @@ window.renderPromptLibrary = async () => {
         </div>`;
       });
     }
-    html += `</div>`;
+    html +=`</div>`;
   });
   cont.innerHTML = html;
 };
@@ -1081,7 +1106,7 @@ async function renderTeacherHome() {
   const snp = await getDocs(q);
   const grid = $("asgn-grid");
   if (snp.empty) {
-    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">📄</div><p>No assignments yet. Create your first one!</p></div>`;
+    grid.innerHTML =`<div class="empty-state"><div class="empty-icon">📄</div><p>No assignments yet. Create your first one!</p></div>`;
     return;
   }
   grid.className = "card-grid";
@@ -1093,8 +1118,8 @@ async function renderTeacherHome() {
       ? (a.stories || []).reduce((sum, s) => sum + (s.branches || []).length, 0)
       : 0;
     const summary = isBranching
-      ? `${(a.stories||[]).length} stories · ${branchCount} branches total`
-      : `${(a.questions||[]).length} questions`;
+      ?`${(a.stories||[]).length} stories · ${branchCount} branches total`
+      :`${(a.questions||[]).length} questions`;
     grid.innerHTML += `
       <div class="card">
         <div class="card-top">
@@ -1188,7 +1213,7 @@ function renderLinearForm(id, d, classes) {
 }
 
 function linearQuestionRow(i, val="", rounds=5) {
-  const opts = [1,2,3,4,5].map(n => `<option value="${n}" ${rounds==n?'selected':''}>${n} round${n>1?'s':''}</option>`).join("");
+  const opts = [1,2,3,4,5].map(n =>`<option value="${n}" ${rounds==n?'selected':''}>${n} round${n>1?'s':''}</option>`).join("");
   return `<div class="question-row" id="qrow-${i}">
     <span class="q-num">${i+1}.</span>
     <input class="q-input" id="q-${i}" value="${escapeHTML(val)}" placeholder="Question ${i+1}…"/>
@@ -1289,7 +1314,7 @@ function renderBranchingForm(id, d, classes) {
           <div>
             <label class="field-label" style="margin-top:0">Stories required to complete</label>
             <select id="f-required-stories" class="field-select">
-              ${[1, 2, 3, 4, 5, 6, 7, 8].map(n => `<option value="${n}" ${n == reqStories ? 'selected' : ''}>${n} stor${n === 1 ? 'y' : 'ies'}</option>`).join("")}
+              ${[1, 2, 3, 4, 5, 6, 7, 8].map(n =>`<option value="${n}" ${n == reqStories ? 'selected' : ''}>${n} stor${n === 1 ? 'y' : 'ies'}</option>`).join("")}
             </select>
           </div>
         </div>
@@ -1313,7 +1338,7 @@ function renderBranchingForm(id, d, classes) {
 
 function emptyStory(i) {
   return {
-    id: `s${Date.now()}_${i}`,
+    id:`s${Date.now()}_${i}`,
     title: "",
     imageUrl: "",
     passage: "",
@@ -1326,7 +1351,7 @@ function emptyStory(i) {
 
 function emptyBranch(i) {
   return {
-    id: `b${Date.now()}_${i}`,
+    id:`b${Date.now()}_${i}`,
     title: "",
     description: "",
     passage: "",
@@ -1338,16 +1363,16 @@ function emptyBranch(i) {
 function storyBlock(idx, s) {
   const branches = s.branches || [];
   const branchPill = branches.length === 0
-    ? `<span class="branch-count-pill zero">No branches</span>`
-    : `<span class="branch-count-pill">${branches.length} branch${branches.length>1?'es':''}</span>`;
+    ?`<span class="branch-count-pill zero">No branches</span>`
+    :`<span class="branch-count-pill">${branches.length} branch${branches.length>1?'es':''}</span>`;
   const reqBr = s.requiredBranches ?? 0;
   const branchReqOptions = [];
   for (let n = 0; n <= Math.max(branches.length, 5); n++) {
-    const label = n === 0 ? "0 — branches are optional (student can skip)" : `${n} branch${n>1?'es':''} required`;
+    const label = n === 0 ? "0 — branches are optional (student can skip)" :`${n} branch${n>1?'es':''} required`;
     branchReqOptions.push(`<option value="${n}" ${n == reqBr ? 'selected' : ''}>${label}</option>`);
   }
 
-  return `<details class="story-block" id="story-${idx}" data-id="${s.id || `s${Date.now()}_${idx}`}" open>
+  return`<details class="story-block" id="story-${idx}" data-id="${s.id || `s${Date.now()}_${idx}`}" open>
     <summary>
       <span class="summary-content">📖 <span class="story-title-preview">Story ${idx + 1}${s.title ? ": " + escapeHTML(s.title) : ""}</span>${branchPill}</span>
       <span class="summary-actions"><button class="btn-icon" onclick="event.stopPropagation();removeStory(${idx})" title="Remove">✕</button></span>
@@ -1382,7 +1407,7 @@ function storyBlock(idx, s) {
 
         <div class="nested-branches-list" id="branches-list-${idx}">
           ${branches.length === 0
-            ? `<div class="no-branches-placeholder">No branches yet for this story. Click "Add Branch to This Story" above to create one.</div>`
+            ?`<div class="no-branches-placeholder">No branches yet for this story. Click "Add Branch to This Story" above to create one.</div>`
             : branches.map((b, bi) => nestedBranchBlock(idx, bi, b)).join("")}
         </div>
 
@@ -1392,14 +1417,14 @@ function storyBlock(idx, s) {
             ${branchReqOptions.join("")}
           </select>
           <p class="field-hint">Set to 0 if branches are optional. Otherwise, students must complete this many before this story counts as done.</p>
-        ` : `<input type="hidden" class="s-required-branches" value="0"/>`}
+` : `<input type="hidden" class="s-required-branches" value="0"/>`}
       </div>
     </div>
   </details>`;
 }
 
 function nestedBranchBlock(storyIdx, branchIdx, b) {
-  return `<details class="learnmore-block" id="branch-${storyIdx}-${branchIdx}" data-id="${b.id || `b${Date.now()}_${storyIdx}_${branchIdx}`}" open>
+  return`<details class="learnmore-block" id="branch-${storyIdx}-${branchIdx}" data-id="${b.id || `b${Date.now()}_${storyIdx}_${branchIdx}`}" open>
     <summary>
       <span class="summary-content">🔍 <span class="branch-title-preview">Branch ${branchIdx + 1}${b.title ? ": " + escapeHTML(b.title) : ""}</span></span>
       <span class="summary-actions"><button class="btn-icon" onclick="event.stopPropagation();removeNestedBranch(${storyIdx}, ${branchIdx})" title="Remove">✕</button></span>
@@ -1416,7 +1441,7 @@ function nestedBranchBlock(storyIdx, branchIdx, b) {
 
       <label class="field-label">Questions</label>
       <div class="nb-questions">
-        ${(b.questions || [{ text: "", maxRounds: 5 }]).map((q, qi) => qRow("nb", `${storyIdx}-${branchIdx}`, qi, q.text, q.maxRounds)).join("")}
+        ${(b.questions || [{ text: "", maxRounds: 5 }]).map((q, qi) => qRow("nb",`${storyIdx}-${branchIdx}`, qi, q.text, q.maxRounds)).join("")}
       </div>
       <button class="btn btn-ghost mt-sm" onclick="addNestedQ(${storyIdx}, ${branchIdx})">+ Add Question</button>
 
@@ -1448,7 +1473,7 @@ window.removeStory = (i) => {
 window.updateStoryTitle = (i, val) => {
   const block = $(`story-${i}`); if (!block) return;
   const preview = block.querySelector(".story-title-preview");
-  if (preview) preview.textContent = `Story ${i+1}${val?": "+val:""}`;
+  if (preview) preview.textContent =`Story ${i+1}${val?": "+val:""}`;
 };
 
 window.addNestedBranch = (storyIdx) => {
@@ -1482,8 +1507,8 @@ window.addNestedBranch = (storyIdx) => {
       const need = Math.max(newCount, 5);
       let html = "";
       for (let n = 0; n <= need; n++) {
-        const label = n === 0 ? "0 — branches are optional (student can skip)" : `${n} branch${n>1?'es':''} required`;
-        html += `<option value="${n}" ${n === current ? 'selected':''}>${label}</option>`;
+        const label = n === 0 ? "0 — branches are optional (student can skip)" :`${n} branch${n>1?'es':''} required`;
+        html +=`<option value="${n}" ${n === current ? 'selected':''}>${label}</option>`;
       }
       sel.innerHTML = html;
     }
@@ -1497,27 +1522,27 @@ window.removeNestedBranch = (storyIdx, branchIdx) => {
   // If no branches left, restore placeholder
   const list = $(`branches-list-${storyIdx}`);
   if (list && list.children.length === 0) {
-    list.innerHTML = `<div class="no-branches-placeholder">No branches yet for this story. Click "Add Branch to This Story" above to create one.</div>`;
+    list.innerHTML =`<div class="no-branches-placeholder">No branches yet for this story. Click "Add Branch to This Story" above to create one.</div>`;
   }
 };
 window.updateNestedBranchTitle = (storyIdx, branchIdx, val) => {
   const block = $(`branch-${storyIdx}-${branchIdx}`);
   if (!block) return;
   const preview = block.querySelector(".branch-title-preview");
-  if (preview) preview.textContent = `Branch ${branchIdx+1}${val?": "+val:""}`;
+  if (preview) preview.textContent =`Branch ${branchIdx+1}${val?": "+val:""}`;
 };
 
 window.addQ = (prefix, parentIdx) => {
-  const parentSel = prefix === "s" ? `#story-${parentIdx} .s-questions` : `#branch-${parentIdx} .nb-questions`;
+  const parentSel = prefix === "s" ?`#story-${parentIdx} .s-questions` :`#branch-${parentIdx} .nb-questions`;
   const cont = document.querySelector(parentSel);
   if (!cont) return;
   cont.insertAdjacentHTML("beforeend", qRow(prefix, parentIdx, cont.children.length));
 };
 window.addNestedQ = (storyIdx, branchIdx) => {
-  const parentSel = `#branch-${storyIdx}-${branchIdx} .nb-questions`;
+  const parentSel =`#branch-${storyIdx}-${branchIdx} .nb-questions`;
   const cont = document.querySelector(parentSel);
   if (!cont) return;
-  cont.insertAdjacentHTML("beforeend", qRow("nb", `${storyIdx}-${branchIdx}`, cont.children.length));
+  cont.insertAdjacentHTML("beforeend", qRow("nb",`${storyIdx}-${branchIdx}`, cont.children.length));
 };
 window.removeQ = (prefix, parentIdx, qi, btn) => {
   btn.closest(".question-row").remove();
@@ -1556,7 +1581,7 @@ window.saveBranching = async (existingId) => {
       });
 
       branches.push({
-        id: bblk.dataset.id || `b${Date.now()}_${branches.length}`,
+        id: bblk.dataset.id ||`b${Date.now()}_${branches.length}`,
         title: bTitle, description: bDesc, passage: bPass, instructions: bInstr, questions: bqs
       });
     });
@@ -1568,7 +1593,7 @@ window.saveBranching = async (existingId) => {
     if (storyReqBranches > branches.length) storyReqBranches = branches.length;
 
     stories.push({
-      id: blk.dataset.id || `s${Date.now()}_${stories.length}`,
+      id: blk.dataset.id ||`s${Date.now()}_${stories.length}`,
       title: sTitle, imageUrl: sImage, passage: sPass, instructions: sInstr,
       branches,
       requiredBranches: storyReqBranches,
@@ -1615,7 +1640,7 @@ window.saveBranching = async (existingId) => {
 function renderClassCheckboxes(classes, selected) {
   return `<div class="class-checkboxes" id="class-checks">
     ${classes.length === 0
-      ? `<p style="color:var(--ink3);font-size:.85rem">⚠️ No classes found — make sure your Apps Script URL is set and you've granted access.</p>`
+      ?`<p style="color:var(--ink3);font-size:.85rem">⚠️ No classes found — make sure your Apps Script URL is set and you've granted access.</p>`
       : classes.map(c => `
         <label class="class-checkbox">
           <input type="checkbox" value="${c.id}" data-name="${escapeHTML(c.name)}" ${(selected||[]).includes(c.id)?"checked":""}/>
@@ -1642,7 +1667,7 @@ async function commonSaveAndPost(existingId, payload) {
   }
 
   if (payload.classIds.length && APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("REPLACE")) {
-    const assignmentUrl = window.location.href.split("?")[0] + `?a=${docId}`;
+    const assignmentUrl = window.location.href.split("?")[0] +`?a=${docId}`;
     try {
       await fetch(APPS_SCRIPT_URL, {
         method:"POST",
@@ -1743,7 +1768,7 @@ window.renderResponses = async (assignmentId, title) => {
 
     const cont = $("resp-container");
     if (snp.empty) {
-      cont.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No responses yet.</p></div>`;
+      cont.innerHTML =`<div class="empty-state"><div class="empty-icon">📭</div><p>No responses yet.</p></div>`;
       return;
     }
 
@@ -1779,7 +1804,7 @@ window.renderResponses = async (assignmentId, title) => {
         <button class="btn btn-primary mt-md" onclick="renderResponses('${assignmentId}','${escapeHTML(title||"").replace(/'/g,"\\'")}')">Try Again</button>
       </div>
       <div class="debug-panel" id="resp-debug"></div>`;
-    document.getElementById("resp-debug").textContent = `Debug: ${e.stack || e.message}`;
+    document.getElementById("resp-debug").textContent =`Debug: ${e.stack || e.message}`;
     toast("Error loading responses", true);
   }
 };
@@ -1807,7 +1832,7 @@ window.renderAllResponses = async () => {
     debugInfo.push(`Found ${assignmentIds.length} assignments: ${assignmentIds.join(", ") || "none"}`);
 
     if (assignmentIds.length === 0) {
-      $("resp-container").innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No assignments yet — create one first!</p></div>`;
+      $("resp-container").innerHTML =`<div class="empty-state"><div class="empty-icon">📭</div><p>No assignments yet — create one first!</p></div>`;
       return;
     }
 
@@ -1821,7 +1846,7 @@ window.renderAllResponses = async () => {
       debugInfo.push(`Fetching batch ${i/10 + 1}: ${batch.length} IDs`);
 
       const respQuery = query(collection(db,"responses"), where("assignmentId","in",batch));
-      const respSnap = await fetchWithTimeout(getDocs(respQuery), 15000, `Responses batch ${i/10 + 1}`);
+      const respSnap = await fetchWithTimeout(getDocs(respQuery), 15000,`Responses batch ${i/10 + 1}`);
 
       respSnap.forEach(d => {
         const data = d.data();
@@ -1832,7 +1857,7 @@ window.renderAllResponses = async () => {
     debugInfo.push(`Found ${allResponses.length} total responses`);
 
     if (allResponses.length === 0) {
-      cont.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No responses yet.</p></div>`;
+      cont.innerHTML =`<div class="empty-state"><div class="empty-icon">📭</div><p>No responses yet.</p></div>`;
       return;
     }
 
@@ -1933,8 +1958,8 @@ window.exportCSV = async (assignmentId) => {
                  r.lastSavedAt?.toDate?.()?.toLocaleDateString() || "";
       const status = r.isDraft === true ? "In Progress" : "Completed";
       (r.session||[]).forEach(s => {
-        const esc = v => `"${(v||"").replace(/"/g,'""')}"`;
-        csv += `${esc(r.studentName)},${esc(r.studentEmail)},${esc(dt)},${esc(status)},${esc(s.context||"")},${esc(s.question)},${esc(s.answer)},${esc(s.feedback)}\n`;
+        const esc = v =>`"${(v||"").replace(/"/g,'""')}"`;
+        csv +=`${esc(r.studentName)},${esc(r.studentEmail)},${esc(dt)},${esc(status)},${esc(s.context||"")},${esc(s.question)},${esc(s.answer)},${esc(s.feedback)}\n`;
       });
     });
     const a = document.createElement("a");
@@ -1965,7 +1990,7 @@ async function renderStudentHome() {
 
   const snp = await getDocs(query(collection(db,"assignments")));
   const list = $("student-assignments");
-  if (snp.empty) { list.innerHTML = `<div class="empty-state"><div class="empty-icon">📚</div><p>No assignments yet.</p></div>`; return; }
+  if (snp.empty) { list.innerHTML =`<div class="empty-state"><div class="empty-icon">📚</div><p>No assignments yet.</p></div>`; return; }
 
   const doneSnap = await getDocs(query(collection(db,"responses"), where("studentId","==",user.uid), where("isDraft","==",false)));
   const doneIds = new Set();
@@ -1983,9 +2008,9 @@ async function renderStudentHome() {
     const inProgress = inProgressIds.has(d.id) && !done;
     const icon = a.type === "branching" ? "🌿" : "📖";
 
-    let badge = `<span class="status-badge todo">To Do</span>`;
-    if (done) badge = `<span class="status-badge done">Done</span>`;
-    else if (inProgress) badge = `<span class="status-badge partial">In Progress</span>`;
+    let badge =`<span class="status-badge todo">To Do</span>`;
+    if (done) badge =`<span class="status-badge done">Done</span>`;
+    else if (inProgress) badge =`<span class="status-badge partial">In Progress</span>`;
 
     list.innerHTML += `
       <div class="assignment-student-card" onclick="startAssignment('${d.id}')">
@@ -2030,7 +2055,7 @@ function freshStart() {
       branchesCompletedThisStory: 0,
       currentStoryId:    null,
       currentBranchId:   null,
-      phase:             "story-pick"
+      phase: "story-pick"
     };
     renderStoryPicker();
   } else {
@@ -2045,11 +2070,11 @@ function showResumePrompt(saved) {
     const j = saved.journey;
     const storiesDone = (j.storiesCompleted || []).length;
     const branchesDone = (j.branchesCompleted || []).length;
-    detail = `<strong>${storiesDone}</strong> stor${storiesDone===1?'y':'ies'} completed`;
-    if (branchesDone > 0) detail += ` · <strong>${branchesDone}</strong> branch${branchesDone>1?'es':''} explored`;
-    detail += ` · <strong>${exchangeCount}</strong> answer${exchangeCount===1?'':'s'} saved`;
+    detail =`<strong>${storiesDone}</strong> stor${storiesDone===1?'y':'ies'} completed`;
+    if (branchesDone > 0) detail +=` · <strong>${branchesDone}</strong> branch${branchesDone>1?'es':''} explored`;
+    detail +=` · <strong>${exchangeCount}</strong> answer${exchangeCount===1?'':'s'} saved`;
   } else {
-    detail = `You're on question <strong>${(saved.qIndex || 0) + 1}</strong> · <strong>${exchangeCount}</strong> answer${exchangeCount===1?'':'s'} saved`;
+    detail =`You're on question <strong>${(saved.qIndex || 0) + 1}</strong> · <strong>${exchangeCount}</strong> answer${exchangeCount===1?'':'s'} saved`;
   }
   const lastUpdated = saved.lastUpdated?.toDate?.()?.toLocaleString() || "earlier";
 
@@ -2171,11 +2196,11 @@ function renderStoryPicker() {
 
   let progressMsg = "";
   if (completed === 0) {
-    progressMsg = `Choose one of ${a.stories.length} stories to begin. <strong>Complete ${required} stor${required>1?'ies':'y'}</strong> to finish this assignment.`;
+    progressMsg =`Choose one of ${a.stories.length} stories to begin. <strong>Complete ${required} stor${required>1?'ies':'y'}</strong> to finish this assignment.`;
   } else if (remaining > 0) {
-    progressMsg = `Great work! <strong>${completed} of ${required}</strong> stor${required>1?'ies':'y'} complete. Choose another to continue.`;
+    progressMsg =`Great work! <strong>${completed} of ${required}</strong> stor${required>1?'ies':'y'} complete. Choose another to continue.`;
   } else {
-    progressMsg = `You've completed all required stories! 🎉`;
+    progressMsg =`You've completed all required stories! 🎉`;
   }
 
   const cardsHTML = a.stories.map(s => {
@@ -2192,9 +2217,9 @@ function renderStoryPicker() {
       <div class="story-card ${done?'completed':''}" onclick="${done?'':`pickStory('${s.id}')`}">
         <div class="story-img-wrap" style="position:relative">
           ${img
-            ? `<img src="${img}" alt="${escapeHTML(s.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><div class="story-img-placeholder" style="display:none">📖</div>`
-            : `<div class="story-img-placeholder">📖</div>`}
-          ${done ? `<span class="story-status-badge">✓ Done</span>` : ""}
+            ?`<img src="${img}" alt="${escapeHTML(s.title)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/><div class="story-img-placeholder" style="display:none">📖</div>`
+            :`<div class="story-img-placeholder">📖</div>`}
+          ${done ?`<span class="story-status-badge">✓ Done</span>` : ""}
         </div>
         <div class="story-card-body">
           <p class="story-card-title">${escapeHTML(s.title)}</p>
@@ -2207,7 +2232,7 @@ function renderStoryPicker() {
     <div class="assignment-view">
       <button class="back-btn" onclick="renderStudentHome()">← Back</button>
       <h2 style="font-family:'Lora',serif;margin-bottom:4px">${escapeHTML(a.title)}</h2>
-      ${a.intro ? `<p style="color:var(--ink2);margin-bottom:20px;line-height:1.6">${escapeHTML(a.intro)}</p>` : ""}
+      ${a.intro ?`<p style="color:var(--ink2);margin-bottom:20px;line-height:1.6">${escapeHTML(a.intro)}</p>` : ""}
       <div class="journey-progress">${progressMsg}</div>
 
       ${remaining <= 0
@@ -2266,7 +2291,7 @@ function renderStoryQuestion() {
 
       <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${progress}%"></div></div>
 
-      ${img && qIndex===0 ? `<img src="${img}" alt="" style="width:100%;max-height:280px;object-fit:cover;border-radius:var(--radius);margin-bottom:16px;border:1px solid var(--border)"/>` : ""}
+      ${img && qIndex===0 ?`<img src="${img}" alt="" style="width:100%;max-height:280px;object-fit:cover;border-radius:var(--radius);margin-bottom:16px;border:1px solid var(--border)"/>` : ""}
 
       <details ${qIndex===0?"open":""}>
         <summary style="cursor:pointer;font-weight:600;font-size:.9rem;color:var(--ink2);margin-bottom:8px;user-select:none">
@@ -2312,19 +2337,19 @@ function renderBranchPicker() {
 
   let msg = "";
   if (availableBranches.length === 0) {
-    msg = `No extra learning paths for this story.`;
+    msg =`No extra learning paths for this story.`;
   } else if (branchesOptional) {
     if (doneCount === 0) {
-      msg = `Nice work on the story! You can <strong>optionally</strong> explore "Learn More" branches below, or finish this story now.`;
+      msg =`Nice work on the story! You can <strong>optionally</strong> explore "Learn More" branches below, or finish this story now.`;
     } else {
-      msg = `You've explored <strong>${doneCount}</strong> branch${doneCount>1?'es':''}. Pick another or finish this story.`;
+      msg =`You've explored <strong>${doneCount}</strong> branch${doneCount>1?'es':''}. Pick another or finish this story.`;
     }
   } else if (doneCount === 0) {
-    msg = `Now choose what you'd like to <strong>learn more about</strong>. Complete <strong>${requiredBr}</strong> branch${requiredBr>1?'es':''} to finish this story.`;
+    msg =`Now choose what you'd like to <strong>learn more about</strong>. Complete <strong>${requiredBr}</strong> branch${requiredBr>1?'es':''} to finish this story.`;
   } else if (remaining > 0) {
-    msg = `Nice! <strong>${doneCount} of ${requiredBr}</strong> done. Pick another.`;
+    msg =`Nice! <strong>${doneCount} of ${requiredBr}</strong> done. Pick another.`;
   } else {
-    msg = `All required branches complete! 🎉`;
+    msg =`All required branches complete! 🎉`;
   }
 
   const branchesDoneSet = new Set(journey.branchesCompleted || []);
@@ -2336,7 +2361,7 @@ function renderBranchPicker() {
         <div class="branch-icon">🔍</div>
         <div class="branch-body">
           <p class="branch-title">${escapeHTML(b.title)}${done ? ' ✓' : ''}</p>
-          ${b.description ? `<p class="branch-desc">${escapeHTML(b.description)}</p>` : ""}
+          ${b.description ?`<p class="branch-desc">${escapeHTML(b.description)}</p>` : ""}
         </div>
       </div>`;
   }).join("");
@@ -2541,17 +2566,17 @@ window.goNextQuestion = () => {
 };
 
 function getCurrentContextLabel() {
-  if (curAssignment.type !== "branching") return `Q${qIndex+1}`;
+  if (curAssignment.type !== "branching") return`Q${qIndex+1}`;
   if (journey.phase === "story-questions") {
     const s = curAssignment.stories.find(x=>x.id===journey.currentStoryId);
-    return `Story: ${s?.title||""} — Q${qIndex+1}`;
+    return`Story: ${s?.title||""} — Q${qIndex+1}`;
   }
   if (journey.phase === "branch-questions") {
     const currentStory = curAssignment.stories.find(x => x.id === journey.currentStoryId);
     const b = currentStory?.branches?.find(x => x.id === journey.currentBranchId);
-    return `Branch: ${b?.title||""} — Q${qIndex+1}`;
+    return`Branch: ${b?.title||""} — Q${qIndex+1}`;
   }
-  return `Q${qIndex+1}`;
+  return`Q${qIndex+1}`;
 }
 
 function getCurrentQuestionText() {
