@@ -846,8 +846,7 @@ async function renderPromptLayerSelector(containerId, layer, multiSelect, curren
     <div class="prompt-preview hidden" id="${containerId}-preview"></div>
   </div>`;
 
-  container.innerHTML = html;
-    // Attach edit button handlers after HTML is inserted
+    container.innerHTML = html;
   if (multiSelect) {
     container.querySelectorAll('.edit-prompt-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -858,7 +857,7 @@ async function renderPromptLayerSelector(containerId, layer, multiSelect, curren
       });
     });
   }
-    updateLayerPreview(containerId);
+  updateLayerPreview(containerId);
 }
 
 window.togglePromptPreview = (containerId) => {
