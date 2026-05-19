@@ -860,7 +860,6 @@ async function renderPromptLayerSelector(containerId, layer, multiSelect, curren
   }
   updateLayerPreview(containerId);
 }
-// Add at end of renderPromptLayerSelector, after setting innerHTML:
 if (multiSelect) {
   container.querySelectorAll('.prompt-preview-toggle').forEach(btn => {
     // Only attach to edit buttons, not the preview toggle
