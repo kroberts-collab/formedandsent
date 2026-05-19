@@ -955,22 +955,11 @@ window.savePromptEdit = async (layer, promptId, containerId, asNew) => {
   const text = document.getElementById("pe-text").value.trim();
   if (!name || !text) { toast("Name and text are required.", true); return; }
 
-  // Robust null/empty check — handles null, undefined, "null", "", "undefined"
-  const actualPromptId = promptId && !["null", "undefined", ""].includes(String(promptId).toLowerCase())
-    ? promptId
-    : null;
+  const cleanId = promptId ? String(promptId).trim() : "";
+  const actualPromptId = (cleanId === "" || cleanId === "null" || cleanId === "undefined") ? null : cleanId;
+  const isUpdate = !asNew && actualPromptId !== null && !actualPromptId.startsWith("builtin-");
 
-  const isUpdate = !asNew && actualPromptId && !String(actualPromptId).startsWith("builtin-");
-
-  logDebug("savePromptEdit", {
-    layer,
-    rawPromptId: promptId,
-    actualPromptId,
-    asNew,
-    isUpdate,
-    name,
-    textLength: text.length
-  });
+  logDebug("savePromptEdit", { layer, rawPromptId: promptId, actualPromptId, asNew, isUpdate, name });
 
   try {
     if (isUpdate) {
@@ -991,16 +980,61 @@ window.savePromptEdit = async (layer, promptId, containerId, asNew) => {
     renderPromptLibrary();
   } else {
     const checks = document.getElementById(`${containerId}-checks`);
-    const multi = !!checks;
+    const isMulti = !!checks;
     let currentValue = null;
-    if (multi) {
-      currentValue = Array.from(checks.querySelectorAll("input:checked")).map(c => c.value);
+    if (isMulti) {
+      currentValue = Array.from(checks.querySelectorAll("input:checked")).map(c=>c.value);
     } else {
       const sel = document.getElementById(`${containerId}-select`);
       currentValue = sel?.value;
     }
-    await renderPromptLayerSelector(containerId, layer, multi, currentValue);
+    await renderPromptLayerSelector(containerId, layer, isMulti, currentValue);
   }
+};
+
+window.closePromptEditor = () => {
+  const m = document.getElementById("prompt-editor-modal");
+  if (m) m.remove();
+};
+
+window.openPromptEditor = async (layer, promptId, containerId, isBuiltin) => {
+  const lib = await loadPromptLibrary();
+  const existing = promptId ? (lib[layer] || []).find(p => p.id === promptId) : null;
+  const isB = existing?.builtin || isBuiltin === true || isBuiltin === "true";
+  const layerName = { layer1:"Global Baseline", layer2:"Preset Approach", layer3:"Assignment-Specific Notes" }[layer];
+
+  const cleanId = promptId ? String(promptId).trim() : "";
+  const safePromptId = (cleanId === "" || cleanId === "null" || cleanId === "undefined") ? null : cleanId;
+
+  document.body.insertAdjacentHTML("beforeend", `
+    <div class="modal-overlay" id="prompt-editor-modal">
+      <div class="modal">
+        <h2>${safePromptId ? "Edit" : "New"} Prompt</h2>
+        <p style="color:var(--ink3);font-size:.85rem;margin-bottom:16px">Layer: ${layerName}</p>
+        ${isB ?`<p style="background:#e8f0fb;color:#2563eb;padding:8px 12px;border-radius:6px;font-size:.85rem;margin-bottom:14px">📌 Built-in prompt. Editing creates a new copy — the original stays available.</p>` : ""}
+        <label class="field-label" style="margin-top:0">Name</label>
+        <input id="pe-name" class="field-input" value="${escapeHTML(existing?.name || "")}" placeholder="e.g. Bible Study Socratic v2"/>
+        <label class="field-label">Prompt Text</label>
+        <textarea id="pe-text" class="field-textarea" rows="12" placeholder="Type the prompt instructions…">${escapeHTML(existing?.text || "")}</textarea>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" id="pe-cancel">Cancel</button>
+          ${(safePromptId && !isB) ?`<button class="btn btn-primary" id="pe-update">Update existing</button>` : ""}
+          <button class="btn btn-primary" id="pe-save">${safePromptId ? "Save as new" : "Save"}</button>
+        </div>
+      </div>
+    </div>`);
+
+  document.getElementById("prompt-editor-modal").addEventListener("click", (e) => {
+    if (e.target.id === "prompt-editor-modal") closePromptEditor();
+  });
+  document.getElementById("pe-cancel").addEventListener("click", closePromptEditor);
+
+  const updateBtn = document.getElementById("pe-update");
+  if (updateBtn) {
+    updateBtn.addEventListener("click", () => savePromptEdit(layer, safePromptId, containerId, false));
+  }
+
+  document.getElementById("pe-save").addEventListener("click", () => savePromptEdit(layer, safePromptId, containerId, true));
 };
 
 window.renderPromptLibrary = async () => {
@@ -1092,6 +1126,7 @@ window.signIn = async () => {
     gToken = null;
   } catch(e) { toast(e.message, true); }
 };
+
 window.signOutUser = async () => { await signOut(auth); };
 
 onAuthStateChanged(auth, async u => {
@@ -1136,6 +1171,7 @@ function buildSidebar() {
       <button class="nav-item active" onclick="renderStudentHome()">🏠 My Assignments</button>`;
   }
 }
+
 function setActiveNav(id) {
   document.querySelectorAll(".nav-item").forEach(n=>n.classList.remove("active"));
   const el = $(id); if (el) el.classList.add("active");
@@ -1531,16 +1567,13 @@ window.updateStoryTitle = (i, val) => {
 window.addNestedBranch = (storyIdx) => {
   const list = $(`branches-list-${storyIdx}`);
   if (!list) return;
-  // Remove placeholder if present
   const placeholder = list.querySelector(".no-branches-placeholder");
   if (placeholder) placeholder.remove();
   const branchIdx = list.children.length;
   list.insertAdjacentHTML("beforeend", nestedBranchBlock(storyIdx, branchIdx, emptyBranch(branchIdx)));
 
-  // Make sure the requiredBranches selector exists (regenerate if it doesn't)
   const nestedBox = $(`nested-branches-${storyIdx}`);
   if (nestedBox && !nestedBox.querySelector(".s-required-branches")) {
-    // Add a small selector below the list
     const after = list;
     after.insertAdjacentHTML("afterend", `
       <label class="field-label" style="margin-top:14px">After finishing this story, branches required</label>
@@ -1551,7 +1584,6 @@ window.addNestedBranch = (storyIdx) => {
       <p class="field-hint">Set to 0 if branches are optional. Otherwise, students must complete this many before this story counts as done.</p>
     `);
   } else if (nestedBox) {
-    // Update existing select to have enough options
     const sel = nestedBox.querySelector(".s-required-branches");
     if (sel && sel.tagName === "SELECT") {
       const current = parseInt(sel.value, 10) || 0;
@@ -1571,7 +1603,6 @@ window.removeNestedBranch = (storyIdx, branchIdx) => {
   if (!confirm("Remove this branch?")) return;
   const el = $(`branch-${storyIdx}-${branchIdx}`);
   if (el) el.remove();
-  // If no branches left, restore placeholder
   const list = $(`branches-list-${storyIdx}`);
   if (list && list.children.length === 0) {
     list.innerHTML =`<div class="no-branches-placeholder">No branches yet for this story. Click "Add Branch to This Story" above to create one.</div>`;
@@ -1638,7 +1669,6 @@ window.saveBranching = async (existingId) => {
       });
     });
 
-    // Read per-story requiredBranches
     const reqSel = blk.querySelector(".s-required-branches");
     let storyReqBranches = 0;
     if (reqSel) storyReqBranches = parseInt(reqSel.value, 10) || 0;
@@ -1788,7 +1818,6 @@ window.duplicateAssignment = async id => {
    TEACHER — RESPONSES (with timeout & fallback)
 ═══════════════════════════════════════════════ */
 
-// Helper: fetch with timeout to prevent hanging
 function fetchWithTimeout(promise, ms, label) {
   return Promise.race([
     promise,
@@ -1874,7 +1903,6 @@ window.renderAllResponses = async () => {
   try {
     logDebug("renderAllResponses start", { user: user?.uid, role });
 
-    // Step 1: Get teacher's assignments with timeout
     debugInfo.push("Step 1: Fetching assignments...");
     const asgnQuery = query(collection(db,"assignments"), where("teacherId","==",user.uid));
     const asgnSnap = await fetchWithTimeout(getDocs(asgnQuery), 15000, "Assignments query");
@@ -1888,7 +1916,6 @@ window.renderAllResponses = async () => {
       return;
     }
 
-    // Step 2: Fetch responses by assignmentId batches
     debugInfo.push("Step 2: Fetching responses...");
     const cont = $("resp-container");
     let allResponses = [];
@@ -1913,7 +1940,6 @@ window.renderAllResponses = async () => {
       return;
     }
 
-    // Sort by date (most recent first)
     allResponses.sort((a, b) => {
       const aTime = a.data.lastSavedAt?.toDate?.() || a.data.submittedAt?.toDate?.() || 0;
       const bTime = b.data.lastSavedAt?.toDate?.() || b.data.submittedAt?.toDate?.() || 0;
@@ -2048,7 +2074,6 @@ async function renderStudentHome() {
   const doneIds = new Set();
   doneSnap.forEach(d => doneIds.add(d.data().assignmentId));
 
-  // Check which assignments have in-progress drafts
   const progSnap = await getDocs(query(collection(db,"progress"), where("studentId","==",user.uid)));
   const inProgressIds = new Set();
   progSnap.forEach(d => inProgressIds.add(d.data().assignmentId));
@@ -2084,14 +2109,12 @@ window.startAssignment = async (assignmentId) => {
   if (!snap.exists()) { toast("Assignment not found.", true); return; }
   curAssignment = { id: assignmentId, ...snap.data() };
 
-  // Check for saved progress
   const saved = await loadProgress(assignmentId);
   if (saved && (saved.session?.length || (saved.journey && saved.journey.storiesCompleted?.length))) {
     showResumePrompt(saved);
     return;
   }
 
-  // Fresh start
   freshStart();
 };
 
@@ -2146,7 +2169,6 @@ function showResumePrompt(saved) {
       <p style="margin-top:18px"><button class="back-btn" onclick="renderStudentHome()">← Back to assignments</button></p>
     </div>`;
 
-  // Stash saved for resume
   window._savedProgress = saved;
 }
 
@@ -2160,7 +2182,6 @@ window.resumeFromSaved = () => {
   window._savedProgress = null;
 
   if (curAssignment.type === "branching") {
-    // Route to the correct phase
     const phase = journey.phase || "story-pick";
     if (phase === "story-questions" && journey.currentStoryId) {
       renderStoryQuestion();
@@ -2318,7 +2339,6 @@ function renderStoryQuestion() {
   const total = story.questions.length;
 
   if (qIndex >= total) {
-    // Story base questions finished. If this story has branches, show the picker.
     const hasBranches = (story.branches || []).length > 0;
     if (hasBranches) {
       journey.phase = "branch-pick";
@@ -2380,7 +2400,6 @@ function renderBranchPicker() {
   const currentStory = a.stories.find(s => s.id === journey.currentStoryId);
   if (!currentStory) { renderStoryPicker(); return; }
 
-  // ONLY this story's branches
   const availableBranches = currentStory.branches || [];
   const requiredBr = currentStory.requiredBranches || 0;
   const doneCount = journey.branchesCompletedThisStory || 0;
@@ -2460,7 +2479,6 @@ function renderBranchQuestion() {
   const total = branch.questions.length;
 
   if (qIndex >= total) {
-    // Branch done
     if (!journey.branchesCompleted.includes(branch.id)) journey.branchesCompleted.push(branch.id);
     journey.branchesCompletedThisStory = (journey.branchesCompletedThisStory || 0) + 1;
     journey.currentBranchId = null;
@@ -2573,7 +2591,6 @@ window.handleSubmit = async (mode, roundId) => {
   session.push({ context:ctx, question:qText, answer, feedback:cleanFeedback });
 
   followUpRound++;
-  // ★ AUTOSAVE after every exchange (local progress + live teacher visibility)
   await Promise.all([
     saveProgress(),
     savePartialResponse()
@@ -2716,7 +2733,6 @@ window.completeAssignment = async () => {
   };
   await setDoc(doc(db, "responses", responseDocId(curAssignment.id)), responseData);
 
-  // ★ Clean up progress doc now that it's finalised
   await deleteProgress(curAssignment.id);
 
   if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.startsWith("REPLACE")) {
@@ -2746,10 +2762,8 @@ window.completeAssignment = async () => {
     </div>`;
 };
 
-// Save progress if user closes the tab mid-session
 window.addEventListener("beforeunload", () => {
   if (user && curAssignment && session.length > 0) {
-    // Best-effort sync save — most browsers allow no async here
     try { saveProgress(); savePartialResponse(); } catch(_) {}
   }
 });
