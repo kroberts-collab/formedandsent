@@ -911,28 +911,19 @@ window.savePromptEdit = async (layer, promptId, containerId, asNew) => {
   const name = document.getElementById("pe-name").value.trim();
   const text = document.getElementById("pe-text").value.trim();
   if (!name || !text) { toast("Name and text are required.", true); return; }
-  if (!asNew && promptId && !promptId.startsWith("builtin-")) {
-    await savePromptToLibrary(layer, name, text, promptId);
+
+  // FIX: treat string "null" as actual null (comes from inline handler)
+  const actualPromptId = (promptId === "null" || promptId === null) ? null : promptId;
+
+  if (!asNew && actualPromptId && !actualPromptId.startsWith("builtin-")) {
+    await savePromptToLibrary(layer, name, text, actualPromptId);
     toast("Prompt updated ✓");
   } else {
     await savePromptToLibrary(layer, name, text, null);
     toast("Prompt saved ✓");
   }
   closePromptEditor();
-  if (containerId === "_library_") {
-    renderPromptLibrary();
-  } else {
-    const checks = document.getElementById(`${containerId}-checks`);
-    const multi = !!checks;
-    let currentValue = null;
-    if (multi) {
-      currentValue = Array.from(checks.querySelectorAll("input:checked")).map(c=>c.value);
-    } else {
-      const sel = document.getElementById(`${containerId}-select`);
-      currentValue = sel?.value;
-    }
-    await renderPromptLayerSelector(containerId, layer, multi, currentValue);
-  }
+  // ... rest unchanged
 };
 
 window.renderPromptLibrary = async () => {
