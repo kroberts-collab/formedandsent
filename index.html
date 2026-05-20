@@ -2596,54 +2596,73 @@ function getCurrentQuestionText() {
   return "";
 }
 
-async function getAIFeedback(studentAnswer) {
-  const a = curAssignment;
-  let systemPrompt;
-  let passage;
-  let questionText = getCurrentQuestionText();
+async function getAIFeedback(studentAnswer, attempt = 1) {
+    const a = curAssignment;
+    let systemPrompt;
+    let passage;
+    let questionText = getCurrentQuestionText();
 
-  if (a.type !== "branching") {
-    systemPrompt = a.instructions || "";
-    passage = a.passage;
-  } else {
-    if (journey.phase === "story-questions") {
-      const s = curAssignment.stories.find(x=>x.id===journey.currentStoryId);
-      systemPrompt = s.instructions || a.instructions || "";
-      passage = s.passage;
-    } else if (journey.phase === "branch-questions") {
-      const currentStory = curAssignment.stories.find(x => x.id === journey.currentStoryId);
-      const b = currentStory?.branches?.find(x => x.id === journey.currentBranchId);
-      systemPrompt = b.instructions || a.instructions || "";
-      passage = b.passage;
+    if (a.type !== "branching") {
+        systemPrompt = a.instructions || "";
+        passage = a.passage;
+    } else {
+        if (journey.phase === "story-questions") {
+            const s = curAssignment.stories.find(x => x.id === journey.currentStoryId);
+            systemPrompt = s.instructions || a.instructions || "";
+            passage = s.passage;
+        } else if (journey.phase === "branch-questions") {
+            const currentStory = curAssignment.stories.find(x => x.id === journey.currentStoryId);
+            const b = currentStory?.branches?.find(x => x.id === journey.currentBranchId);
+            systemPrompt = b.instructions || a.instructions || "";
+            passage = b.passage;
+        }
     }
-  }
 
-  const currentCtx = getCurrentContextLabel();
-  const sameQ = session.filter(s => s.context === currentCtx);
-  const conversationHistory = sameQ.map(s => [
-    { role:"user", content:`Question: ${s.question}\nMy answer: ${s.answer}` },
-    { role:"assistant", content: s.feedback }
-  ]).flat();
-  conversationHistory.push({
-    role:"user",
-    content:`Passage:\n${passage}\n\nQuestion: ${questionText}\n\nMy answer: ${studentAnswer}`
-  });
+    const currentCtx = getCurrentContextLabel();
+    const sameQ = session.filter(s => s.context === currentCtx);
+    const conversationHistory = sameQ.map(s => [
+        { role: "user", content: `Question: ${s.question}\nMy answer: ${s.answer}` },
+        { role: "assistant", content: s.feedback }
+    ]).flat();
 
-  try {
-    const resp = await fetch(APPS_SCRIPT_URL, {
-      method:"POST",
-      headers:{"Content-Type":"text/plain;charset=utf-8"},
-      body: JSON.stringify({
-        action:"getAIFeedback",
-        systemPrompt,
-        messages: conversationHistory
-      })
+    conversationHistory.push({
+        role: "user",
+        content: `Passage:\n${passage}\n\nQuestion: ${questionText}\n\nMy answer: ${studentAnswer}`
     });
-    const data = await resp.json();
-    return data.feedback || "Thank you for your response. What evidence from the text supports your thinking?";
-  } catch(e) {
-    return "Great effort! What specific part of the passage supports your answer?";
-  }
+
+    try {
+        const resp = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+                action: "getAIFeedback",
+                systemPrompt,
+                messages: conversationHistory
+            })
+        });
+        const data = await resp.json();
+
+        if (data.feedback) {
+            return data.feedback;
+        }
+
+        // feedback field missing or empty — retry once if first attempt
+        if (attempt === 1) {
+            console.warn("AI feedback empty on attempt 1, retrying...");
+            return getAIFeedback(studentAnswer, 2);
+        }
+
+        return "Thank you for your response. What else can you tell me about that?";
+
+    } catch (e) {
+        // fetch threw — retry once if first attempt
+        if (attempt === 1) {
+            console.warn("AI fetch failed on attempt 1, retrying...", e);
+            return getAIFeedback(studentAnswer, 2);
+        }
+
+        return "Great effort! What else can you tell me about that?";
+    }
 }
 
 window.completeAssignment = async () => {
