@@ -2142,7 +2142,7 @@ function renderClassCheckboxes(classes, selectedClassIds, savedStudentTargets) {
       const isExpanded = !!t;
       return `<div class="class-picker-item" data-course-id="${c.id}" data-course-name="${escapeAttr(c.name)}" data-historical='${escapeAttr(JSON.stringify(t?.historical || []))}' data-selected-students='${escapeAttr(JSON.stringify(t?.selected || []))}'>
         <div class="class-picker-row">
-          <input type="checkbox" class="class-check" value="${c.id}" data-name="${escapeAttr(c.name)}" ${isChecked?"checked":""}/>
+          <input type="checkbox" class="class-check" value="${c.id}" data-name="${escapeAttr(c.name)}" ${isChecked?"checked":""} onchange="handleClassCheckChange(this)"/>
           <span class="class-picker-name">${escapeHTML(c.name)} <span style="color:var(--ink3);font-size:.8rem">${c.section?"("+escapeHTML(c.section)+")":""}</span></span>
           <span class="class-picker-summary" data-summary>${t && t.selected && t.selected.length > 0 ? t.selected.length + ' student' + (t.selected.length>1?'s':'') + ' selected' : 'Whole class'}</span>
           <button type="button" class="class-picker-toggle ${isExpanded?'open':''}" onclick="toggleClassExpand(this)">▶</button>
@@ -2224,6 +2224,18 @@ window.toggleClassExpand = async (btn) => {
   }
 };
 
+window.handleClassCheckChange = (cb) => {
+  // If the teacher just unchecked the class, clear all student selections within it
+  if (!cb.checked) {
+    const item = cb.closest(".class-picker-item");
+    item.querySelectorAll(".student-check").forEach(s => {
+      if (!s.dataset.historical) s.checked = false;
+    });
+    const allToggle = item.querySelector(".all-students-toggle");
+    if (allToggle) allToggle.checked = false;
+    updateClassSummary(item);
+  }
+};
 window.toggleAllStudents = (cb) => {
   const studentsDiv = cb.closest(".class-picker-students");
   studentsDiv.querySelectorAll(".student-check").forEach(s => {
@@ -2234,8 +2246,15 @@ window.toggleAllStudents = (cb) => {
 
 function updateClassSummary(item) {
   const summary = item.querySelector("[data-summary]");
+  const classCheck = item.querySelector(".class-check");
   const checked = item.querySelectorAll(".student-check:checked");
   if (!summary) return;
+
+  // If any students are checked, auto-check the class
+  if (checked.length > 0 && classCheck && !classCheck.checked) {
+    classCheck.checked = true;
+  }
+
   if (checked.length === 0) {
     summary.textContent = "Whole class";
   } else {
