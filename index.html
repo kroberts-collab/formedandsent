@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>formedandsent</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
 <style>
   :root {
@@ -129,6 +130,41 @@
   .class-checkbox:hover { border-color:var(--accent2); }
   .class-checkbox input { accent-color:var(--accent); width:16px; height:16px; }
   .class-checkbox label { cursor:pointer; font-size:.92rem; }
+  /* ── EXPANDABLE CLASS PICKER ──────────────── */
+.class-picker-item {
+  border:1.5px solid var(--border); border-radius:8px; margin-bottom:8px;
+  background:var(--surface); transition:border-color .12s;
+}
+.class-picker-item:hover { border-color:var(--accent2); }
+.class-picker-row {
+  display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer;
+}
+.class-picker-row input[type=checkbox] { accent-color:var(--accent); width:16px; height:16px; }
+.class-picker-name { font-size:.92rem; flex:1; }
+.class-picker-summary { font-size:.8rem; color:var(--ink3); margin-right:8px; }
+.class-picker-toggle {
+  background:none; border:none; color:var(--ink3); font-size:1rem; cursor:pointer;
+  padding:2px 6px; transition:transform .15s; user-select:none;
+}
+.class-picker-toggle.open { transform:rotate(90deg); color:var(--accent); }
+.class-picker-students {
+  border-top:1px solid var(--border); padding:10px 14px 14px 40px;
+  background:var(--bg); max-height:280px; overflow-y:auto;
+  border-radius:0 0 8px 8px;
+}
+.class-picker-students .all-toggle {
+  font-size:.85rem; font-weight:600; color:var(--accent); padding:4px 0;
+  border-bottom:1px solid var(--border); margin-bottom:8px;
+}
+.class-picker-students label {
+  display:flex; align-items:center; gap:8px; padding:4px 0; font-size:.88rem;
+  cursor:pointer;
+}
+.class-picker-students label.inactive { opacity:.5; color:var(--ink3); }
+.class-picker-students label.inactive::after {
+  content:" (no longer in class)"; font-size:.75rem; font-style:italic;
+}
+.class-picker-students .loading { color:var(--ink3); font-size:.85rem; font-style:italic; padding:8px 0; }
 
   .type-picker { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .type-card { border:2px solid var(--border); border-radius:var(--radius); padding:18px; cursor:pointer; transition:all .15s; background:var(--surface); }
@@ -327,6 +363,29 @@
   .prompt-card-fade { position:absolute; bottom:0; left:0; right:0; height:30px; background:linear-gradient(transparent, var(--surface)); pointer-events:none; }
   .prompt-card-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
   .builtin-badge { font-size:.7rem; color:var(--ink3); margin-left:6px; font-style:italic; }
+  /* ── BULK IMPORT ─────────────────────────────── */
+  .import-dropzone {
+    border:2px dashed var(--border); border-radius:var(--radius);
+    padding:32px 24px; text-align:center; background:var(--bg);
+    transition:all .15s; cursor:pointer;
+  }
+  .import-dropzone:hover { border-color:var(--accent); background:#e8f4ee; }
+  .import-dropzone.active { border-color:var(--accent); background:#e8f4ee; }
+  .import-preview-table { width:100%; border-collapse:collapse; font-size:.85rem; margin-top:16px; }
+  .import-preview-table th { text-align:left; padding:8px 10px; background:var(--bg); font-size:.72rem; text-transform:uppercase; color:var(--ink2); letter-spacing:.04em; border-bottom:2px solid var(--border); }
+  .import-preview-table td { padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
+  .import-preview-table .row-assignment { background:#e8f0fb; }
+  .import-preview-table .row-story { background:#e8f4ee; }
+  .import-preview-table .row-branch { background:#fef3e2; }
+  .import-preview-table .row-question { }
+  .import-preview-table .row-error { background:#fdf0ec; }
+  .import-error-list { background:#fdf0ec; border-left:3px solid var(--warn); padding:12px 16px; border-radius:0 8px 8px 0; margin:12px 0; font-size:.88rem; }
+  .import-error-list ul { margin:6px 0 0 18px; }
+  .import-error-list li { margin-bottom:4px; color:var(--warn); }
+  .import-stats { display:flex; gap:16px; margin:12px 0; font-size:.9rem; color:var(--ink2); flex-wrap:wrap; }
+  .import-stat { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 14px; }
+  .import-stat strong { color:var(--accent); }
+  .truncate-cell { max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
   .story-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:18px; }
   .story-card {
@@ -505,15 +564,15 @@ import { getFirestore, collection, doc, setDoc, getDoc, getDocs, addDoc, deleteD
    🔧  CONFIG  — paste your existing values here
 ──────────────────────────────────────────────── */
 const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyDpwK7arl0FS6uKnYyAI3O_hgkwM178A9Y",
-    authDomain: "formedandsent.firebaseapp.com",
-    projectId: "formedandsent",
-    storageBucket: "formedandsent.firebasestorage.app",
-    messagingSenderId: "1031066699010",
-    appId: "1:1031066699010:web:617cb6f11fd5139c35ee1b"
-  };
+  apiKey: "AIzaSyD4zzHMhcHRJd9pcB7jO0NtA4D8y1Vgi1Y",
+  authDomain: "formedandsent-staging.firebaseapp.com",
+  projectId: "formedandsent-staging",
+  storageBucket: "formedandsent-staging.firebasestorage.app",
+  messagingSenderId: "266251831134",
+  appId: "1:266251831134:web:3d349bf5b2fb8b770ff1cf"
+};
 // Your Google Apps Script web app URL (handles Sheets + Classroom)
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHKV-_Un-9xH9c0RRpUdcz7CCsZZYUhnldEgkcJX8bH8rNmT_ZUKdRuYrejhVFGIbbvg/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwS7S-bvgPbNw9zxT3NoqwHejz7QitcajvSlDpNHZPiHPdBOvPl5tbU4RgqHGCCgaJl/exec";
 /* ──────────────────────────────────────────── */
 
 const fbApp = initializeApp(FIREBASE_CONFIG);
@@ -1023,6 +1082,422 @@ window.deletePrompt = async (id, isBuiltin, builtinId, layer) => {
   toast(isB ? "Hidden." : "Deleted.");
 };
 
+/* ═══════════════════════════════════════════════════════════
+   BULK IMPORT (XLSX/CSV → assignment)
+═══════════════════════════════════════════════════════════ */
+
+window.openBulkImportModal = () => {
+  document.body.insertAdjacentHTML("beforeend", `
+    <div class="modal-overlay" id="bulk-modal" onclick="if(event.target.id==='bulk-modal')closeBulkModal()">
+      <div class="modal" style="max-width:760px">
+        <h2>📥 Bulk Import Assignment</h2>
+        <p style="color:var(--ink2);font-size:.9rem;margin-bottom:18px">Upload an .xlsx or .csv file built from the template. The system will preview what it parsed before saving.</p>
+
+        <div class="import-dropzone" id="import-dropzone" onclick="document.getElementById('import-file').click()">
+          <p style="font-size:1.05rem;margin-bottom:6px">📄 Click or drop a file here</p>
+          <p style="color:var(--ink3);font-size:.85rem">Supports .xlsx and .csv</p>
+          <input type="file" id="import-file" accept=".xlsx,.csv" style="display:none" onchange="handleBulkFile(this.files[0])"/>
+        </div>
+
+        <div id="bulk-preview"></div>
+
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="closeBulkModal()">Cancel</button>
+        </div>
+      </div>
+    </div>`);
+
+  // Setup drag-and-drop
+  const dz = document.getElementById("import-dropzone");
+  dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("active"); });
+  dz.addEventListener("dragleave", () => dz.classList.remove("active"));
+  dz.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dz.classList.remove("active");
+    if (e.dataTransfer.files.length > 0) handleBulkFile(e.dataTransfer.files[0]);
+  });
+};
+
+window.closeBulkModal = () => {
+  const m = document.getElementById("bulk-modal");
+  if (m) m.remove();
+};
+
+window.handleBulkFile = async (file) => {
+  if (!file) return;
+  try {
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data, { type: "array" });
+    const sheetName = wb.SheetNames.find(n => n.toLowerCase().includes("template")) || wb.SheetNames[0];
+    const sheet = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: false });
+    parseAndPreview(rows);
+  } catch(e) {
+    document.getElementById("bulk-preview").innerHTML = `<div class="import-error-list"><strong>Failed to read file:</strong> ${escapeHTML(e.message)}</div>`;
+  }
+};
+
+// Normalize column name lookups (case-insensitive, trim spaces)
+function getCol(row, ...names) {
+  for (const name of names) {
+    const target = name.toLowerCase().replace(/[\s\/]/g, "");
+    for (const key of Object.keys(row)) {
+      if (key.toLowerCase().replace(/[\s\/]/g, "") === target) {
+        const v = row[key];
+        if (v == null) return "";
+        return String(v).trim();
+      }
+    }
+  }
+  return "";
+}
+
+function parseAndPreview(rows) {
+  const errors = [];
+  const warnings = [];
+  let assignmentRow = null;
+  const storiesById = {};      // storyId -> { story, questions[], branchesById:{} }
+  const orphanQs = [];
+
+  rows.forEach((row, idx) => {
+    const rowNum = idx + 2; // +2 because row 1 is header, and we want 1-indexed
+    const type = getCol(row, "Type").toLowerCase();
+    if (!type) return; // blank row, skip silently
+
+    if (type === "assignment") {
+      if (assignmentRow) {
+        errors.push(`Row ${rowNum}: Multiple 'assignment' rows found. Only one is allowed.`);
+        return;
+      }
+      assignmentRow = {
+        title:           getCol(row, "Title"),
+        intro:           getCol(row, "Body / Passage", "Body", "Passage"),
+        subject:         getCol(row, "Subject Tag", "Subject"),
+        defaultLayer2:   getCol(row, "Layer 2 Preset"),
+        requiredStories: parseInt(getCol(row, "Required Stories"), 10) || 1
+      };
+      if (!assignmentRow.title) errors.push(`Row ${rowNum}: Assignment row missing Title.`);
+    }
+    else if (type === "story") {
+      const storyId = getCol(row, "Story ID");
+      if (!storyId) { errors.push(`Row ${rowNum}: Story row missing Story ID.`); return; }
+      if (storiesById[storyId]) { errors.push(`Row ${rowNum}: Duplicate Story ID '${storyId}'.`); return; }
+      const story = {
+        id:           storyId,
+        order:        parseInt(getCol(row, "Order"), 10) || 99,
+        title:        getCol(row, "Title"),
+        passage:      getCol(row, "Body / Passage", "Body", "Passage"),
+        imageUrl:     getCol(row, "Image URL"),
+        videoUrl:     getCol(row, "Video URL"),
+        transcript:   getCol(row, "Transcript"),
+        instructions: getCol(row, "Layer 2 Preset"),
+        requiredBranches: parseInt(getCol(row, "Required Branches"), 10) || 0,
+        questions:    [],
+        branches:     []
+      };
+      if (!story.title)   errors.push(`Row ${rowNum}: Story '${storyId}' missing Title.`);
+      if (!story.passage) errors.push(`Row ${rowNum}: Story '${storyId}' missing Body/Passage.`);
+      storiesById[storyId] = { story, branchesById: {} };
+    }
+    else if (type === "story-q") {
+      const storyId = getCol(row, "Story ID");
+      const text = getCol(row, "Body / Passage", "Body");
+      if (!storyId) { errors.push(`Row ${rowNum}: story-q row missing Story ID.`); return; }
+      if (!text)    { errors.push(`Row ${rowNum}: story-q row missing Body (question text).`); return; }
+      const q = {
+        text,
+        order:     parseInt(getCol(row, "Order"), 10) || 99,
+        maxRounds: parseInt(getCol(row, "Max Rounds"), 10) || 5,
+        aiGoal:    getCol(row, "AI Goal"),
+        layer2:    getCol(row, "Layer 2 Preset")
+      };
+      if (!storiesById[storyId]) {
+        orphanQs.push({ rowNum, storyId, type, q });
+      } else {
+        storiesById[storyId].story.questions.push(q);
+      }
+    }
+    else if (type === "branch") {
+      const storyId  = getCol(row, "Story ID");
+      const branchId = getCol(row, "Branch ID");
+      if (!storyId)  { errors.push(`Row ${rowNum}: branch row missing Story ID.`); return; }
+      if (!branchId) { errors.push(`Row ${rowNum}: branch row missing Branch ID.`); return; }
+      const branch = {
+        id:           branchId,
+        order:        parseInt(getCol(row, "Order"), 10) || 99,
+        title:        getCol(row, "Title"),
+        description:  "",
+        passage:      getCol(row, "Body / Passage", "Body", "Passage"),
+        instructions: getCol(row, "Layer 2 Preset"),
+        questions:    []
+      };
+      if (!branch.title)   errors.push(`Row ${rowNum}: Branch '${branchId}' missing Title.`);
+      if (!branch.passage) errors.push(`Row ${rowNum}: Branch '${branchId}' missing Body/Passage.`);
+      if (!storiesById[storyId]) {
+        errors.push(`Row ${rowNum}: Branch '${branchId}' references unknown story '${storyId}'.`);
+      } else if (storiesById[storyId].branchesById[branchId]) {
+        errors.push(`Row ${rowNum}: Duplicate Branch ID '${branchId}' under story '${storyId}'.`);
+      } else {
+        storiesById[storyId].branchesById[branchId] = branch;
+        storiesById[storyId].story.branches.push(branch);
+      }
+    }
+    else if (type === "branch-q") {
+      const storyId  = getCol(row, "Story ID");
+      const branchId = getCol(row, "Branch ID");
+      const text     = getCol(row, "Body / Passage", "Body");
+      if (!storyId || !branchId) { errors.push(`Row ${rowNum}: branch-q missing Story ID or Branch ID.`); return; }
+      if (!text) { errors.push(`Row ${rowNum}: branch-q missing question text.`); return; }
+      const q = {
+        text,
+        order:     parseInt(getCol(row, "Order"), 10) || 99,
+        maxRounds: parseInt(getCol(row, "Max Rounds"), 10) || 5,
+        aiGoal:    getCol(row, "AI Goal"),
+        layer2:    getCol(row, "Layer 2 Preset")
+      };
+      const s = storiesById[storyId];
+      if (!s) {
+        errors.push(`Row ${rowNum}: branch-q references unknown story '${storyId}'.`);
+      } else if (!s.branchesById[branchId]) {
+        errors.push(`Row ${rowNum}: branch-q references unknown branch '${branchId}' under story '${storyId}'.`);
+      } else {
+        s.branchesById[branchId].questions.push(q);
+      }
+    }
+    else {
+      warnings.push(`Row ${rowNum}: Unknown Type '${type}' — skipped.`);
+    }
+  });
+
+  if (!assignmentRow) errors.push("No 'assignment' row found. Add exactly one row with Type=assignment.");
+
+  // Try to attach orphan questions now that all stories are seen
+  orphanQs.forEach(o => {
+    if (storiesById[o.storyId]) {
+      storiesById[o.storyId].story.questions.push(o.q);
+    } else {
+      errors.push(`Row ${o.rowNum}: ${o.type} references unknown story '${o.storyId}'.`);
+    }
+  });
+
+  // Sort stories and questions by Order
+  const stories = Object.values(storiesById).map(s => s.story);
+  stories.sort((a,b) => a.order - b.order);
+  stories.forEach(s => {
+    s.questions.sort((a,b) => a.order - b.order);
+    s.branches.sort((a,b) => a.order - b.order);
+    s.branches.forEach(b => b.questions.sort((a,b) => a.order - b.order));
+  });
+
+  renderImportPreview(assignmentRow, stories, errors, warnings);
+}
+
+function renderImportPreview(assignmentRow, stories, errors, warnings) {
+  const cont = document.getElementById("bulk-preview");
+  let html = "";
+
+  const totalQuestions = stories.reduce((sum,s) =>
+    sum + (s.questions?.length||0) + (s.branches||[]).reduce((sb,b) => sb + (b.questions?.length||0), 0)
+  , 0);
+  const totalBranches = stories.reduce((sum,s) => sum + (s.branches?.length||0), 0);
+
+  // Stats
+  html += `<div class="import-stats">
+    <div class="import-stat">Assignment: <strong>${assignmentRow ? "✓ found" : "✗ missing"}</strong></div>
+    <div class="import-stat">Stories: <strong>${stories.length}</strong></div>
+    <div class="import-stat">Branches: <strong>${totalBranches}</strong></div>
+    <div class="import-stat">Questions: <strong>${totalQuestions}</strong></div>
+  </div>`;
+
+  // Errors
+  if (errors.length > 0) {
+    html += `<div class="import-error-list"><strong>⚠️ Errors (must fix before importing):</strong>
+      <ul>${errors.map(e=>`<li>${escapeHTML(e)}</li>`).join("")}</ul></div>`;
+  }
+
+  // Warnings
+  if (warnings.length > 0) {
+    html += `<div class="import-error-list" style="border-left-color:#d97706;background:#fef3e2">
+      <strong>Warnings:</strong>
+      <ul style="margin:6px 0 0 18px">${warnings.map(w=>`<li style="color:#d97706">${escapeHTML(w)}</li>`).join("")}</ul></div>`;
+  }
+
+  // Preview table
+  if (assignmentRow && stories.length > 0) {
+    html += `<table class="import-preview-table">
+      <thead><tr><th>What</th><th>Title</th><th>Detail</th></tr></thead>
+      <tbody>`;
+    html += `<tr class="row-assignment">
+      <td>📋 Assignment</td>
+      <td><strong>${escapeHTML(assignmentRow.title)}</strong></td>
+      <td>Subject: ${escapeHTML(assignmentRow.subject||'—')} · Requires ${assignmentRow.requiredStories} stor${assignmentRow.requiredStories>1?'ies':'y'}</td>
+    </tr>`;
+    stories.forEach(s => {
+      html += `<tr class="row-story">
+        <td>📖 Story</td>
+        <td><strong>${escapeHTML(s.title)}</strong></td>
+        <td>${s.questions.length} question${s.questions.length===1?'':'s'}${s.imageUrl?' · 🖼':''}${s.videoUrl?' · 🎬':''}${s.transcript?' · 📝':''} · ${s.branches.length} branch${s.branches.length===1?'':'es'}</td>
+      </tr>`;
+      s.questions.forEach((q,i) => {
+        html += `<tr class="row-question">
+          <td style="padding-left:30px">└ Q${i+1}</td>
+          <td colspan="2" class="truncate-cell">${escapeHTML(q.text)}</td>
+        </tr>`;
+      });
+      s.branches.forEach(b => {
+        html += `<tr class="row-branch">
+          <td style="padding-left:20px">🔍 Branch</td>
+          <td><strong>${escapeHTML(b.title)}</strong></td>
+          <td>${b.questions.length} question${b.questions.length===1?'':'s'}</td>
+        </tr>`;
+        b.questions.forEach((q,i) => {
+          html += `<tr class="row-question">
+            <td style="padding-left:50px">└ Q${i+1}</td>
+            <td colspan="2" class="truncate-cell">${escapeHTML(q.text)}</td>
+          </tr>`;
+        });
+      });
+    });
+    html += `</tbody></table>`;
+  }
+
+  // Actions
+  const canSave = errors.length === 0 && assignmentRow && stories.length > 0;
+  html += `<div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
+    ${canSave ? `
+      <button class="btn btn-primary" onclick='saveBulkImport(${JSON.stringify(assignmentRow).replace(/'/g,"&#39;")}, ${JSON.stringify(stories).replace(/'/g,"&#39;")}, false)'>
+        ✓ Create New Assignment
+      </button>
+      <button class="btn btn-secondary" onclick='saveBulkImport(${JSON.stringify(assignmentRow).replace(/'/g,"&#39;")}, ${JSON.stringify(stories).replace(/'/g,"&#39;")}, true)'>
+        ⊕ Append to existing (same title)
+      </button>
+    ` : `
+      <p style="color:var(--ink3);font-size:.88rem">Fix the errors above to enable import.</p>
+    `}
+  </div>`;
+
+  cont.innerHTML = html;
+}
+
+window.saveBulkImport = async (assignmentRow, stories, appendMode) => {
+  try {
+    // Convert AI goals + presets per question into resolved instructions strings
+    const defaultLayer2Text = await resolvePromptSelection("layer2", assignmentRow.defaultLayer2 ? [assignmentRow.defaultLayer2] : []);
+
+    // Resolve per-question instructions (layer2 + AI goal)
+    for (const story of stories) {
+      // Story-level instructions: if story has Layer 2 Preset, resolve it
+      if (story.instructions) {
+        const txt = await resolvePromptSelection("layer2", [story.instructions]);
+        story.instructions = txt;
+      }
+      for (const q of story.questions) {
+        const parts = [];
+        if (q.layer2) parts.push(await resolvePromptSelection("layer2", [q.layer2]));
+        if (q.aiGoal) parts.push(q.aiGoal);
+        if (parts.length > 0) q.instructions = parts.join("\n\n");
+        delete q.aiGoal; delete q.layer2; delete q.order;
+      }
+      for (const b of story.branches) {
+        if (b.instructions) {
+          const txt = await resolvePromptSelection("layer2", [b.instructions]);
+          b.instructions = txt;
+        }
+        for (const q of b.questions) {
+          const parts = [];
+          if (q.layer2) parts.push(await resolvePromptSelection("layer2", [q.layer2]));
+          if (q.aiGoal) parts.push(q.aiGoal);
+          if (parts.length > 0) q.instructions = parts.join("\n\n");
+          delete q.aiGoal; delete q.layer2; delete q.order;
+        }
+        delete b.order;
+      }
+      delete story.order;
+    }
+
+    // Build resolved assignment-level instructions
+    const l1 = await resolvePromptSelection("layer1", "builtin-l1-standard");
+    const resolvedInstructions = [l1, defaultLayer2Text].filter(Boolean).join("\n\n");
+
+    // Check for existing assignment with same title (if append mode)
+    let existingId = null;
+    if (appendMode) {
+      const snp = await getDocs(query(collection(db,"assignments"),
+        where("teacherId","==",user.uid),
+        where("title","==",assignmentRow.title)));
+      if (!snp.empty) {
+        existingId = snp.docs[0].id;
+      } else {
+        toast("No existing assignment with that title — creating new instead.");
+      }
+    }
+
+    if (existingId) {
+      // APPEND mode — merge stories, skipping IDs that already exist
+      const existing = (await getDoc(doc(db,"assignments",existingId))).data();
+      const existingStoryIds = new Set((existing.stories||[]).map(s=>s.id));
+      const newStories = stories.filter(s => !existingStoryIds.has(s.id));
+      const mergedStories = [...(existing.stories||[])];
+
+      // For each NEW story, add it
+      newStories.forEach(s => mergedStories.push(s));
+
+      // For each existing story, see if any new branches/questions need adding
+      stories.forEach(newS => {
+        if (existingStoryIds.has(newS.id)) {
+          const exS = mergedStories.find(s => s.id === newS.id);
+          const exBranchIds = new Set((exS.branches||[]).map(b=>b.id));
+          newS.branches.forEach(b => {
+            if (!exBranchIds.has(b.id)) {
+              exS.branches = exS.branches || [];
+              exS.branches.push(b);
+            }
+          });
+        }
+      });
+
+      await setDoc(doc(db,"assignments",existingId), {
+        stories: mergedStories,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      toast(`Appended ${newStories.length} new stor${newStories.length===1?'y':'ies'} ✓`);
+    } else {
+      // CREATE NEW
+      const payload = {
+        type: "branching",
+        title: assignmentRow.title,
+        subject: assignmentRow.subject,
+        intro: assignmentRow.intro,
+        promptCfg: {
+          layer1: "builtin-l1-standard",
+          layer2: assignmentRow.defaultLayer2 ? [assignmentRow.defaultLayer2] : [],
+          layer3: ""
+        },
+        instructions: resolvedInstructions,
+        stories,
+        branches: [], // legacy field, not used in per-story branching
+        requiredStories: assignmentRow.requiredStories,
+        requiredBranches: 0,
+        classIds: [],
+        classNames: [],
+        teacherId: user.uid,
+        teacherName: user.displayName,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+      await addDoc(collection(db,"assignments"), payload);
+      toast("Assignment created ✓");
+    }
+
+    closeBulkModal();
+    renderTeacherHome();
+  } catch(e) {
+    toast("Save failed: " + e.message, true);
+    console.error(e);
+  }
+};
+
 async function resolvePromptSelection(layer, value) {
   const lib = await loadPromptLibrary();
   const items = lib[layer] || [];
@@ -1098,7 +1573,10 @@ async function renderTeacherHome() {
   mc().innerHTML = `
     <div class="page-header">
       <div><h1 class="page-title">Assignments</h1><p class="page-sub">Create and manage AI-powered reading tasks</p></div>
-      <button class="btn btn-primary" onclick="renderTypePicker()">+ New Assignment</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="openBulkImportModal()">📥 Bulk Import</button>
+        <button class="btn btn-primary" onclick="renderTypePicker()">+ New Assignment</button>
+      </div>
     </div>
     <div id="asgn-grid"><div class="loading-spinner"></div></div>`;
 
@@ -1198,7 +1676,7 @@ function renderLinearForm(id, d, classes) {
       <div id="prompt-l3"></div>
 
       <label class="field-label">Post to Google Classroom Classes</label>
-      ${renderClassCheckboxes(classes, d.classIds||[])}
+      ${renderClassCheckboxes(classes, d.classIds||[], d.studentTargetsHistorical ? Object.fromEntries(Object.entries(d.studentTargetsHistorical).map(([cid, hist]) => [cid, { historical: hist, selected: (d.studentTargets && d.studentTargets[cid]) || [] }])) : null)}
 
       <div class="form-actions">
         <button class="btn btn-secondary" onclick="renderTeacherHome()">Cancel</button>
@@ -1256,7 +1734,7 @@ window.saveLinear = async (existingId) => {
     await resolvePromptSelection("layer3", promptCfg.layer3)
   ].filter(Boolean).join("\n\n");
 
-  const { classIds, classNames } = readClassChecks();
+  const { classIds, classNames, studentTargets, studentTargetsHistorical } = readClassChecks();
   const payload = {
     type:"linear", title, passage,
     subject:      $("f-subject").value.trim(),
@@ -1264,6 +1742,8 @@ window.saveLinear = async (existingId) => {
     promptCfg,
     instructions: resolvedInstructions,
     classIds, classNames,
+    studentTargets,
+    studentTargetsHistorical,
     teacherId:    user.uid,
     teacherName:  user.displayName,
     updatedAt:    serverTimestamp()
@@ -1322,7 +1802,7 @@ function renderBranchingForm(id, d, classes) {
       </div>
 
       <label class="field-label">Post to Google Classroom Classes</label>
-      ${renderClassCheckboxes(classes, d.classIds || [])}
+      ${renderClassCheckboxes(classes, d.classIds||[], d.studentTargetsHistorical ? Object.fromEntries(Object.entries(d.studentTargetsHistorical).map(([cid, hist]) => [cid, { historical: hist, selected: (d.studentTargets && d.studentTargets[cid]) || [] }])) : null)}
 
       <div class="form-actions">
         <button class="btn btn-secondary" onclick="renderTeacherHome()">Cancel</button>
@@ -1620,7 +2100,7 @@ window.saveBranching = async (existingId) => {
     await resolvePromptSelection("layer3", promptCfg.layer3)
   ].filter(Boolean).join("\n\n");
 
-  const { classIds, classNames } = readClassChecks();
+  const { classIds, classNames, studentTargets, studentTargetsHistorical } = readClassChecks();
   const payload = {
     type: "branching", title,
     subject: $("f-subject").value.trim(),
@@ -1630,6 +2110,8 @@ window.saveBranching = async (existingId) => {
     stories,
     requiredStories: reqStories,
     classIds, classNames,
+    studentTargets,
+    studentTargetsHistorical,
     teacherId: user.uid,
     teacherName: user.displayName,
     updatedAt: serverTimestamp()
@@ -1637,23 +2119,154 @@ window.saveBranching = async (existingId) => {
   await commonSaveAndPost(existingId, payload);
 };
 
-function renderClassCheckboxes(classes, selected) {
+function renderClassCheckboxes(classes, selectedClassIds, savedStudentTargets) {
+  // selectedClassIds: array of course IDs that should be pre-checked
+  // savedStudentTargets: optional map { courseId: { selected: [uid,...], historical: [{userId, name, email},...] } }
+  //   if present for a class, we pre-expand and pre-check those students
+
+  if (!classes || classes.length === 0) {
+    return `<div class="class-checkboxes" id="class-checks">
+      <p style="color:var(--ink3);font-size:.85rem">⚠️ No classes found — make sure your Apps Script URL is set and you've granted access.</p>
+    </div>`;
+  }
+
+  const targets = savedStudentTargets || {};
+
   return `<div class="class-checkboxes" id="class-checks">
-    ${classes.length === 0
-      ?`<p style="color:var(--ink3);font-size:.85rem">⚠️ No classes found — make sure your Apps Script URL is set and you've granted access.</p>`
-      : classes.map(c => `
-        <label class="class-checkbox">
-          <input type="checkbox" value="${c.id}" data-name="${escapeHTML(c.name)}" ${(selected||[]).includes(c.id)?"checked":""}/>
-          <label>${escapeHTML(c.name)} <span style="color:var(--ink3);font-size:.8rem">(${escapeHTML(c.section||"")})</span></label>
-        </label>`).join("")}
+    ${classes.map(c => {
+      const isChecked = (selectedClassIds||[]).includes(c.id);
+      const t = targets[c.id];
+      const isExpanded = !!t;
+      return `<div class="class-picker-item" data-course-id="${c.id}" data-course-name="${escapeAttr(c.name)}" data-historical='${escapeAttr(JSON.stringify(t?.historical || []))}' data-selected-students='${escapeAttr(JSON.stringify(t?.selected || []))}'>
+        <div class="class-picker-row">
+          <input type="checkbox" class="class-check" value="${c.id}" data-name="${escapeAttr(c.name)}" ${isChecked?"checked":""}/>
+          <span class="class-picker-name">${escapeHTML(c.name)} <span style="color:var(--ink3);font-size:.8rem">${c.section?"("+escapeHTML(c.section)+")":""}</span></span>
+          <span class="class-picker-summary" data-summary>${t && t.selected && t.selected.length > 0 ? t.selected.length + ' student' + (t.selected.length>1?'s':'') + ' selected' : 'Whole class'}</span>
+          <button type="button" class="class-picker-toggle ${isExpanded?'open':''}" onclick="toggleClassExpand(this)">▶</button>
+        </div>
+        <div class="class-picker-students" style="display:${isExpanded?'block':'none'}"></div>
+      </div>`;
+    }).join("")}
   </div>`;
 }
+
+window.toggleClassExpand = async (btn) => {
+  const item = btn.closest(".class-picker-item");
+  const studentsDiv = item.querySelector(".class-picker-students");
+  const isOpen = btn.classList.contains("open");
+
+  if (isOpen) {
+    // Collapse
+    btn.classList.remove("open");
+    studentsDiv.style.display = "none";
+    return;
+  }
+
+  // Expand
+  btn.classList.add("open");
+  studentsDiv.style.display = "block";
+
+  // If already loaded, don't re-fetch
+  if (studentsDiv.dataset.loaded === "true") return;
+
+  studentsDiv.innerHTML = `<div class="loading">Loading roster…</div>`;
+  const courseId = item.dataset.courseId;
+  const historical = JSON.parse(item.dataset.historical || "[]");
+  const preselected = new Set(JSON.parse(item.dataset.selectedStudents || "[]"));
+
+  try {
+    const url = `${APPS_SCRIPT_URL}?action=getStudents&courseId=${encodeURIComponent(courseId)}&token=${encodeURIComponent(gToken||"")}`;
+    const r = await fetch(url);
+    const j = await r.json();
+    const students = j.students || [];
+
+    // Build a set of current students' userIds
+    const currentIds = new Set(students.map(s => s.userId));
+    // Identify "removed" historical students who were selected but no longer in roster
+    const removedStudents = historical.filter(h => !currentIds.has(h.userId));
+
+    let html = `<label class="all-toggle"><input type="checkbox" class="all-students-toggle" onchange="toggleAllStudents(this)"/> <span>Select all in this class</span></label>`;
+
+    // Current students
+    students.forEach(s => {
+      const checked = preselected.has(s.userId) ? "checked" : "";
+      html += `<label>
+        <input type="checkbox" class="student-check" value="${s.userId}" data-name="${escapeAttr(s.name)}" data-email="${escapeAttr(s.email)}" ${checked}/>
+        <span>${escapeHTML(s.name)}</span>
+      </label>`;
+    });
+
+    // Historical students who are no longer in the roster (grayed out)
+    removedStudents.forEach(s => {
+      html += `<label class="inactive">
+        <input type="checkbox" class="student-check" value="${s.userId}" data-name="${escapeAttr(s.name)}" data-email="${escapeAttr(s.email)}" data-historical="true" checked/>
+        <span>${escapeHTML(s.name)}</span>
+      </label>`;
+    });
+
+    if (students.length === 0 && removedStudents.length === 0) {
+      html += `<p style="color:var(--ink3);font-size:.85rem">No students in this class yet.</p>`;
+    }
+
+    studentsDiv.innerHTML = html;
+    studentsDiv.dataset.loaded = "true";
+
+    // Update summary whenever any student checkbox changes
+    studentsDiv.querySelectorAll(".student-check").forEach(cb => {
+      cb.addEventListener("change", () => updateClassSummary(item));
+    });
+    updateClassSummary(item);
+  } catch(e) {
+    studentsDiv.innerHTML = `<p style="color:var(--warn);font-size:.85rem">Couldn't load students: ${escapeHTML(e.message)}</p>`;
+  }
+};
+
+window.toggleAllStudents = (cb) => {
+  const studentsDiv = cb.closest(".class-picker-students");
+  studentsDiv.querySelectorAll(".student-check").forEach(s => {
+    if (!s.dataset.historical) s.checked = cb.checked;
+  });
+  updateClassSummary(cb.closest(".class-picker-item"));
+};
+
+function updateClassSummary(item) {
+  const summary = item.querySelector("[data-summary]");
+  const checked = item.querySelectorAll(".student-check:checked");
+  if (!summary) return;
+  if (checked.length === 0) {
+    summary.textContent = "Whole class";
+  } else {
+    summary.textContent = `${checked.length} student${checked.length>1?'s':''} selected`;
+  }
+}
 function readClassChecks() {
-  const checks = document.querySelectorAll('#class-checks input[type=checkbox]:checked');
-  return {
-    classIds:   Array.from(checks).map(c=>c.value),
-    classNames: Array.from(checks).map(c=>c.dataset.name)
-  };
+  const items = document.querySelectorAll('#class-checks .class-picker-item');
+  const classIds = [];
+  const classNames = [];
+  const studentTargets = {};
+  const studentTargetsHistorical = {};
+
+  items.forEach(item => {
+    const classCheck = item.querySelector(".class-check");
+    if (!classCheck || !classCheck.checked) return;
+    const courseId = classCheck.value;
+    classIds.push(courseId);
+    classNames.push(classCheck.dataset.name);
+
+    // Are any specific students selected?
+    const studentChecks = item.querySelectorAll(".student-check:checked");
+    if (studentChecks.length > 0) {
+      studentTargets[courseId] = Array.from(studentChecks).map(s => s.value);
+      // Save name/email for historical display next time
+      studentTargetsHistorical[courseId] = Array.from(studentChecks).map(s => ({
+        userId: s.value,
+        name:   s.dataset.name,
+        email:  s.dataset.email
+      }));
+    }
+  });
+
+  return { classIds, classNames, studentTargets, studentTargetsHistorical };
 }
 
 async function commonSaveAndPost(existingId, payload) {
@@ -1678,7 +2291,8 @@ async function commonSaveAndPost(existingId, payload) {
           title: payload.title,
           description:`Complete this AI-powered reading assignment: ${assignmentUrl}`,
           url: assignmentUrl,
-          classIds: payload.classIds
+          classIds: payload.classIds,
+          studentTargets: payload.studentTargets || {}
         })
       });
       toast("Published to Google Classroom ✓");
