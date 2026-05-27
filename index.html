@@ -604,6 +604,9 @@ function toast(msg, isError=false) {
   setTimeout(()=> t.className="", 3000);
 }
 
+function escapeAttr(s) {
+  return (s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/'/g,"&#39;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
 function escapeHTML(s) { return (s||"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[c])); }
 
 function normaliseImageURL(url) {
